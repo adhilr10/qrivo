@@ -1,0 +1,1570 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import Icon from '../../components/Icon.astro';
+---
+
+<Layout title="ReviewHub Admin | Manage Businesses & Counter QR Codes" hideNav={false}>
+  <div class="admin-page-container">
+    
+    <!-- Admin Top Header Banner -->
+    <div class="admin-header no-print">
+      <div class="container admin-header-flex">
+        <div>
+          <div style="display: flex; align-items: center; gap: 0.75rem; margin-bottom: 0.25rem;">
+            <h1 style="font-size: 1.5rem; font-weight: 800; color: #ffffff;">Admin Management Portal</h1>
+            <span id="backendStatusPill" class="status-pill local">
+              <span class="status-dot"></span>
+              <span id="backendStatusText">Checking Backend...</span>
+            </span>
+          </div>
+          <p style="font-size: 0.875rem; color: var(--text-muted);">
+            Manage counter QR destinations, brand landing pages, and review conversion analytics.
+          </p>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+          <span id="adminUserEmail" style="font-size: 0.8125rem; color: var(--text-muted);"></span>
+          <button id="signOutBtn" class="btn btn-outline btn-sm" title="Sign out of the admin portal">
+            Sign out
+          </button>
+          <button id="supabaseSetupModalBtn" class="btn btn-outline btn-sm" title="View Supabase Database Setup & SQL">
+            <Icon name="settings" size={15} />
+            <span>Supabase SQL</span>
+          </button>
+          <button id="openNewBizBtn" class="btn btn-primary btn-sm">
+            <Icon name="plus" size={16} />
+            <span>Add New Business</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container" style="padding-top: 1.5rem; padding-bottom: 4rem;">
+
+      <!-- Nav Tabs -->
+      <div class="admin-tabs no-print">
+        <button class="tab-btn active" data-tab="businessesTab">
+          <Icon name="shield-check" size={17} />
+          <span>Businesses (<span id="bizCountBadge">0</span>)</span>
+        </button>
+        <button class="tab-btn" data-tab="analyticsTab">
+          <Icon name="bar-chart" size={17} />
+          <span>Analytics & Conversions</span>
+        </button>
+        <button class="tab-btn" data-tab="qrStudioTab">
+          <Icon name="qrcode" size={17} />
+          <span>QR Studio & Counter Tent Card</span>
+        </button>
+      </div>
+
+      <!-- ======================================================================
+           TAB 1: BUSINESSES DIRECTORY & MANAGEMENT
+           ====================================================================== -->
+      <div id="businessesTab" class="tab-content">
+        <!-- Search & Filter bar -->
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+          <div style="position: relative; max-width: 380px; width: 100%;">
+            <input
+              type="text"
+              id="searchBizInput"
+              placeholder="Search by business name or slug..."
+              class="form-input"
+              style="padding-left: 2.5rem;"
+            />
+            <span style="position: absolute; left: 0.85rem; top: 50%; transform: translateY(-50%); color: var(--text-dim);">🔍</span>
+          </div>
+
+          <div style="font-size: 0.875rem; color: var(--text-muted);">
+            💡 <em>Tip: Physical counter QR codes never need reprinting when you reassign destination links.</em>
+          </div>
+        </div>
+
+        <!-- Business Cards Grid -->
+        <div class="business-list-grid" id="businessListContainer">
+          <!-- Dynamically populated via script -->
+          <div style="text-align: center; padding: 3rem; color: var(--text-muted);">
+            Loading businesses...
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================================
+           TAB 2: ANALYTICS DASHBOARD
+           ====================================================================== -->
+      <div id="analyticsTab" class="tab-content" style="display: none;">
+        <!-- Top Stats Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-card-title">
+              <span>TOTAL SCANS / VIEWS</span>
+              <span>📱</span>
+            </div>
+            <div class="stat-card-value" id="statTotalViews">0</div>
+            <div class="stat-card-change">Across all active counter cards</div>
+          </div>
+
+          <div class="stat-card" style="border-color: rgba(66, 133, 244, 0.3);">
+            <div class="stat-card-title">
+              <span>GOOGLE REVIEW CLICKS</span>
+              <span style="color: #4285f4;">⭐</span>
+            </div>
+            <div class="stat-card-value" id="statReviewClicks" style="color: #60a5fa;">0</div>
+            <div class="stat-card-change">High-intent customers rated on Google</div>
+          </div>
+
+          <div class="stat-card" style="border-color: rgba(37, 211, 102, 0.3);">
+            <div class="stat-card-title">
+              <span>WHATSAPP INQUIRIES</span>
+              <span style="color: #25d366;">💬</span>
+            </div>
+            <div class="stat-card-value" id="statWaClicks" style="color: #4ade80;">0</div>
+            <div class="stat-card-change">Direct customer chat starts</div>
+          </div>
+
+          <div class="stat-card">
+            <div class="stat-card-title">
+              <span>PHONE CALLS & SOCIALS</span>
+              <span>📞</span>
+            </div>
+            <div class="stat-card-value" id="statSocialClicks">0</div>
+            <div class="stat-card-change">Calls, Instagram & Facebook taps</div>
+          </div>
+
+          <div class="stat-card" style="border-color: rgba(245, 158, 11, 0.3);">
+            <div class="stat-card-title">
+              <span>REVIEW CONVERSION RATE</span>
+              <span style="color: #fbbf24;">🎯</span>
+            </div>
+            <div class="stat-card-value" id="statAvgConversion" style="color: #fde047;">0%</div>
+            <div class="stat-card-change">Scan-to-Google Review conversion</div>
+          </div>
+        </div>
+
+        <!-- Business Breakdown Analytics Table -->
+        <div class="glass-card" style="padding: 1.5rem; margin-bottom: 2rem;">
+          <h2 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1.25rem; color: #ffffff;">
+            Business Conversion Breakdown
+          </h2>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 0.875rem;">
+              <thead>
+                <tr style="border-bottom: 1px solid var(--border-subtle); color: var(--text-muted);">
+                  <th style="padding: 0.75rem 1rem;">BUSINESS / SLUG</th>
+                  <th style="padding: 0.75rem 1rem; text-align: center;">VIEWS</th>
+                  <th style="padding: 0.75rem 1rem; text-align: center;">GOOGLE REVIEWS</th>
+                  <th style="padding: 0.75rem 1rem; text-align: center;">WHATSAPP</th>
+                  <th style="padding: 0.75rem 1rem; text-align: center;">CALLS / SOCIAL</th>
+                  <th style="padding: 0.75rem 1rem; text-align: center;">CONVERSION RATE</th>
+                </tr>
+              </thead>
+              <tbody id="analyticsTableBody">
+                <!-- Populated via script -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Live Activity Stream -->
+        <div class="glass-card" style="padding: 1.5rem;">
+          <h2 style="font-size: 1.125rem; font-weight: 700; margin-bottom: 1rem; color: #ffffff; display: flex; align-items: center; gap: 0.5rem;">
+            <span>⚡ Recent Anonymous Customer Interactions</span>
+          </h2>
+          <div id="liveActivityFeed" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 350px; overflow-y: auto;">
+            <!-- Populated via script -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================================
+           TAB 3: QR CODE STUDIO & PRINTABLE COUNTER TENT CARD
+           ====================================================================== -->
+      <div id="qrStudioTab" class="tab-content" style="display: none;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 2rem; align-items: start;">
+          
+          <!-- Left: QR Customization Form -->
+          <div class="glass-card" style="padding: 1.75rem;">
+            <h2 style="font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;">
+              Dynamic QR Code Studio
+            </h2>
+            <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem;">
+              Generate high-resolution PNG & SVG QR codes for physical counter stands. 
+              The encoded URL links to the slug landing page, keeping the physical print 100% reusable!
+            </p>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label class="form-label" for="qrBizSelect">Select Business Destination</label>
+              <select id="qrBizSelect" class="form-select">
+                <!-- Populated via script -->
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.25rem;">
+              <label class="form-label">Destination URL Preview</label>
+              <div style="display: flex; gap: 0.5rem;">
+                <input type="text" id="qrEncodedUrlInput" class="form-input" readonly />
+                <button type="button" id="copyQrUrlBtn" class="btn btn-secondary btn-sm" title="Copy URL">
+                  <Icon name="copy" size={16} />
+                </button>
+              </div>
+              <span class="form-helper">This is the persistent URL encoded inside the QR matrix.</span>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 1.5rem;">
+              <label class="form-label">QR Code Foreground Color</label>
+              <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <input type="color" id="qrColorPicker" value="#000000" style="width: 48px; height: 38px; border-radius: 8px; border: 1px solid var(--border-subtle); background: none; cursor: pointer;" />
+                <button type="button" class="btn btn-outline btn-sm" id="qrMatchBrandBtn">Match Brand Color</button>
+                <button type="button" class="btn btn-outline btn-sm" id="qrResetBlackBtn">Classic Black</button>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+              <button type="button" id="downloadPngBtn" class="btn btn-primary" style="width: 100%;">
+                <Icon name="download" size={18} />
+                <span>Download High-Res Print PNG (1024x1024)</span>
+              </button>
+
+              <button type="button" id="downloadSvgBtn" class="btn btn-secondary" style="width: 100%;">
+                <Icon name="download" size={18} />
+                <span>Download Vector SVG (For Sign Makers)</span>
+              </button>
+
+              <button type="button" id="openPrintCardBtn" class="btn btn-outline" style="width: 100%; border-color: #6366f1; color: #a5b4fc;">
+                <span>🖨️ Print Counter Tent Stand (1-Click)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Right: Live QR Preview & Counter Tent Mockup -->
+          <div class="glass-card" style="padding: 1.75rem; text-align: center;">
+            <div style="font-size: 0.875rem; font-weight: 600; color: var(--text-muted); margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em;">
+              Live QR Preview
+            </div>
+
+            <div style="display: inline-block; padding: 1.25rem; background: #ffffff; border-radius: 16px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); margin-bottom: 1.25rem;">
+              <div id="qrPreviewContainer" style="display: flex; justify-content: center; align-items: center; min-width: 240px; min-height: 240px;">
+                <!-- QR SVG rendered here -->
+              </div>
+            </div>
+
+            <div style="font-size: 1rem; font-weight: 700; color: #ffffff;" id="qrPreviewBizName">
+              Select a business
+            </div>
+            <div style="font-size: 0.8125rem; color: var(--text-dim); margin-top: 0.25rem;" id="qrPreviewTagline">
+              Point phone camera to test
+            </div>
+
+            <!-- Hidden canvas for high-res PNG export -->
+            <canvas id="qrExportCanvas" style="display: none;"></canvas>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ======================================================================
+         MODAL: CREATE / EDIT BUSINESS WITH LIVE SMARTPHONE PREVIEW
+         ====================================================================== -->
+    <div id="bizModal" class="modal-backdrop" style="display: none;">
+      <div class="modal-dialog">
+        <div class="modal-header">
+          <h2 id="modalTitle" style="font-size: 1.25rem; font-weight: 700; color: #ffffff;">Create Business</h2>
+          <button type="button" id="closeModalBtn" style="color: var(--text-muted); font-size: 1.5rem; line-height: 1;">&times;</button>
+        </div>
+
+        <div class="modal-body-split">
+          <!-- Left: Form Inputs -->
+          <form id="bizForm" style="display: flex; flex-direction: column; gap: 1.15rem;">
+            <input type="hidden" id="formBizId" />
+
+            <div class="form-group">
+              <label class="form-label" for="formName">Business Name *</label>
+              <input type="text" id="formName" class="form-input" placeholder="e.g. Bella Italia Trattoria" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="formSlug">
+                <span>Unique Counter URL Slug *</span>
+                <span id="slugAvailabilityBadge" style="font-size: 0.75rem; color: #34d399;">Available</span>
+              </label>
+              <div style="display: flex; align-items: center;">
+                <span style="background: #1f2937; padding: 0.75rem 0.85rem; border: 1px solid var(--border-subtle); border-right: none; border-radius: var(--radius-md) 0 0 var(--radius-md); font-size: 0.85rem; color: var(--text-dim);">
+                  /
+                </span>
+                <input
+                  type="text"
+                  id="formSlug"
+                  class="form-input"
+                  placeholder="bella-italia"
+                  style="border-radius: 0 var(--radius-md) var(--radius-md) 0;"
+                  required
+                />
+              </div>
+              <span class="form-helper">
+                This forms the permanent counter URL. Example: <code>https://yourdomain.com/bella-italia</code>
+              </span>
+            </div>
+
+            <!-- Reassign Slug Warning Banner -->
+            <div id="reassignSlugNotice" style="display: none; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 0.75rem; font-size: 0.8125rem; color: #fde68a;">
+              ♻️ <strong>Reassigning Slug:</strong> Updating links under an existing slug preserves all existing printed counter QR codes without requiring reprinting!
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="formLogoUrl">Logo Image URL</label>
+                <input
+                  type="url"
+                  id="formLogoUrl"
+                  class="form-input"
+                  placeholder="https://images.unsplash.com/..."
+                />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="formBrandColor">Brand Primary Color</label>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                  <input type="color" id="formBrandColor" value="#2563eb" style="width: 44px; height: 38px; border-radius: 8px; border: 1px solid var(--border-subtle); background: none; cursor: pointer;" />
+                  <input type="text" id="formBrandColorText" class="form-input" value="#2563eb" style="width: 100px;" />
+                  <div style="display: flex; gap: 4px;">
+                    <button type="button" class="color-preset-dot" data-color="#2563eb" style="background: #2563eb;"></button>
+                    <button type="button" class="color-preset-dot" data-color="#d97706" style="background: #d97706;"></button>
+                    <button type="button" class="color-preset-dot" data-color="#059669" style="background: #059669;"></button>
+                    <button type="button" class="color-preset-dot" data-color="#dc2626" style="background: #dc2626;"></button>
+                    <button type="button" class="color-preset-dot" data-color="#7c3aed" style="background: #7c3aed;"></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="formTagline">Short Tagline</label>
+              <input type="text" id="formTagline" class="form-input" placeholder="e.g. Wood-fired pizza & handcrafted pasta" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="formGoogleUrl">
+                <span>Google Review Link *</span>
+                <a href="https://support.google.com/business/answer/7035772" target="_blank" rel="noopener noreferrer" style="font-size: 0.75rem; color: #60a5fa; text-decoration: underline;">
+                  How to get link?
+                </a>
+              </label>
+              <input
+                type="url"
+                id="formGoogleUrl"
+                class="form-input"
+                placeholder="https://search.google.com/local/writereview?placeid=..."
+                required
+              />
+              <span class="form-helper">The direct URL that opens the 5-star Google review box.</span>
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="formWaNumber">WhatsApp Number</label>
+                <input type="text" id="formWaNumber" class="form-input" placeholder="+15551234567" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="formPhone">Phone Number</label>
+                <input type="text" id="formPhone" class="form-input" placeholder="+1 (555) 123-4567" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="formWaMessage">WhatsApp Default Greeting</label>
+              <input
+                type="text"
+                id="formWaMessage"
+                class="form-input"
+                placeholder="Hi! I am contacting you from your counter QR card."
+              />
+            </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="formInsta">Instagram Profile URL</label>
+                <input type="url" id="formInsta" class="form-input" placeholder="https://instagram.com/yourbusiness" />
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="formFb">Facebook Page URL</label>
+                <input type="url" id="formFb" class="form-input" placeholder="https://facebook.com/yourbusiness" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="formCustomMsg">Custom Thank-You Message</label>
+              <textarea
+                id="formCustomMsg"
+                class="form-textarea"
+                rows="2"
+                placeholder="Thank you for supporting our local team! Please take 10 seconds to share your review."
+              ></textarea>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: #111827; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+              <div>
+                <div style="font-weight: 600; font-size: 0.9375rem; color: #ffffff;">Active Counter Stand</div>
+                <div style="font-size: 0.75rem; color: var(--text-dim);">Inactive stands display a friendly pause notice.</div>
+              </div>
+              <label class="switch">
+                <input type="checkbox" id="formIsActive" checked />
+                <span class="slider round"></span>
+              </label>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1rem;">
+              <button type="button" id="cancelFormBtn" class="btn btn-secondary">Cancel</button>
+              <button type="submit" id="saveBizSubmitBtn" class="btn btn-primary">
+                <Icon name="check" size={16} />
+                <span>Save Business</span>
+              </button>
+            </div>
+          </form>
+
+          <!-- Right: Real-time Live Phone Mockup Preview -->
+          <div class="phone-mockup-wrapper">
+            <div style="text-align: center; margin-bottom: 0.75rem; font-size: 0.8125rem; color: var(--text-muted); font-weight: 600; text-transform: uppercase;">
+              Live Customer Mobile Preview
+            </div>
+            <div class="smartphone-frame" id="livePhoneMockup">
+              <!-- Dynamically mirrored via JavaScript -->
+              <div class="smartphone-screen" id="previewScreen">
+                <div style="width: 64px; height: 64px; border-radius: 50%; margin: 0 auto 0.75rem auto; border: 2px solid var(--brand); overflow: hidden; background: #1f2937;">
+                  <img id="prevImg" src="" style="width: 100%; height: 100%; object-fit: cover;" />
+                </div>
+                <div style="font-size: 0.65rem; color: #60a5fa; font-weight: 600; margin-bottom: 0.25rem;">VERIFIED LOCAL BUSINESS</div>
+                <div id="prevName" style="font-size: 1.15rem; font-weight: 800; color: #ffffff; line-height: 1.2;">Business Name</div>
+                <div id="prevTagline" style="font-size: 0.75rem; color: #9ca3af; margin-bottom: 1rem;">Tagline appears here</div>
+
+                <div style="background: rgba(255,255,255,0.04); border-radius: 8px; padding: 0.5rem; margin-bottom: 0.75rem;">
+                  <div style="font-size: 0.7rem; color: #d1d5db; margin-bottom: 0.25rem;">Rate your experience</div>
+                  <div style="color: #fbbf24; font-size: 1.1rem; letter-spacing: 2px;">★★★★★</div>
+                </div>
+
+                <div style="background: #ffffff; color: #111827; border-radius: 8px; padding: 0.65rem; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.5rem; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                  <span style="color: #4285f4; font-weight: 900;">G</span>
+                  <span>Rate us on Google</span>
+                </div>
+
+                <div id="prevWa" style="display: none; background: #25d366; color: #ffffff; border-radius: 8px; padding: 0.55rem; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.75rem;">
+                  Chat on WhatsApp
+                </div>
+
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-bottom: 0.75rem;">
+                  <div style="background: rgba(255,255,255,0.06); padding: 6px 2px; border-radius: 6px; font-size: 0.6rem; color: #e5e7eb;">Call</div>
+                  <div style="background: rgba(255,255,255,0.06); padding: 6px 2px; border-radius: 6px; font-size: 0.6rem; color: #e5e7eb;">WhatsApp</div>
+                  <div style="background: rgba(255,255,255,0.06); padding: 6px 2px; border-radius: 6px; font-size: 0.6rem; color: #e5e7eb;">Instagram</div>
+                  <div style="background: rgba(255,255,255,0.06); padding: 6px 2px; border-radius: 6px; font-size: 0.6rem; color: #e5e7eb;">Facebook</div>
+                </div>
+
+                <div id="prevMsg" style="font-size: 0.65rem; color: #6b7280; line-height: 1.3;">
+                  Custom thank-you note
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         MODAL: SUPABASE SETUP & SQL MIGRATION VIEWER
+         ====================================================================== -->
+    <div id="supabaseModal" class="modal-backdrop" style="display: none;">
+      <div class="modal-dialog" style="max-width: 720px;">
+        <div class="modal-header">
+          <h2 style="font-size: 1.25rem; font-weight: 700; color: #ffffff; display: flex; align-items: center; gap: 0.5rem;">
+            <span>⚡ Supabase Backend Integration</span>
+          </h2>
+          <button type="button" id="closeSupabaseModalBtn" style="color: var(--text-muted); font-size: 1.5rem; line-height: 1;">&times;</button>
+        </div>
+
+        <div style="padding: 1.5rem;">
+          <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.25rem;">
+            ReviewHub connects to Supabase for PostgreSQL persistence, Row Level Security, and real-time analytics. 
+            Paste the SQL schema below directly into your <strong>Supabase SQL Editor</strong> to create the tables, indexes, and security policies.
+          </p>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.8125rem; font-weight: 600; color: #d1d5db;">supabase/schema.sql</span>
+            <button type="button" id="copySqlBtn" class="btn btn-outline btn-sm">
+              <Icon name="copy" size={14} />
+              <span id="copySqlBtnText">Copy Migration SQL</span>
+            </button>
+          </div>
+
+          <textarea
+            id="sqlCodeTextarea"
+            readonly
+            rows="12"
+            style="width: 100%; font-family: monospace; font-size: 0.8125rem; background: #090d16; color: #34d399; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; resize: vertical;"
+          >-- ReviewHub Supabase Schema
+-- Run this in your Supabase project's SQL editor
+
+CREATE TABLE IF NOT EXISTS public.businesses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    slug VARCHAR(100) UNIQUE NOT NULL,
+    logo_url TEXT DEFAULT '',
+    brand_color VARCHAR(20) DEFAULT '#2563eb',
+    tagline VARCHAR(255) DEFAULT '',
+    google_review_url TEXT NOT NULL,
+    whatsapp_number VARCHAR(50) DEFAULT '',
+    whatsapp_message TEXT DEFAULT '',
+    phone_number VARCHAR(50) DEFAULT '',
+    instagram_url TEXT DEFAULT '',
+    facebook_url TEXT DEFAULT '',
+    custom_message TEXT DEFAULT '',
+    is_active BOOLEAN DEFAULT true NOT NULL,
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS public.analytics_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID REFERENCES public.businesses(id) ON DELETE CASCADE NOT NULL,
+    slug VARCHAR(100) NOT NULL,
+    event_type VARCHAR(50) NOT NULL,
+    user_agent TEXT,
+    referrer TEXT,
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+-- RLS Policies
+ALTER TABLE public.businesses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Public can view businesses by slug" ON public.businesses FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Admins manage businesses" ON public.businesses FOR ALL TO authenticated
+  USING (auth.uid() = user_id OR user_id IS NULL)
+  WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+CREATE POLICY "Public can log analytics" ON public.analytics_events FOR INSERT WITH CHECK (true);
+CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT TO authenticated USING (true);
+          </textarea>
+
+          <div style="margin-top: 1.25rem; padding: 1rem; background: #111827; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
+            <div style="font-size: 0.8125rem; font-weight: 600; color: #ffffff; margin-bottom: 0.5rem;">
+              Environment Variables (.env)
+            </div>
+            <code style="font-size: 0.75rem; color: #818cf8; display: block; line-height: 1.6;">
+              PUBLIC_SUPABASE_URL=https://your-project.supabase.co<br />
+              PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI...
+            </code>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         PRINTABLE COUNTER TENT CARD (Hidden on screen, shown when printing)
+         ====================================================================== -->
+    <div id="printableTentCard" class="print-tent-card" style="display: none;">
+      <div style="border: 2px dashed #9ca3af; padding: 2rem; border-radius: 16px; margin: 0 auto; text-align: center;">
+        
+        <!-- Logo -->
+        <div style="width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 1rem auto; overflow: hidden; border: 2px solid #000000;">
+          <img id="printCardLogo" src="" style="width: 100%; height: 100%; object-fit: cover;" />
+        </div>
+
+        <h1 id="printCardTitle" style="font-size: 1.75rem; font-weight: 800; color: #000000; margin-bottom: 0.25rem; text-transform: uppercase;">
+          Business Name
+        </h1>
+        <p id="printCardTagline" style="font-size: 1rem; color: #4b5563; margin-bottom: 1.5rem;">
+          Specialty Service
+        </p>
+
+        <!-- 5 Stars Graphic -->
+        <div style="font-size: 2rem; color: #f59e0b; margin-bottom: 1rem; letter-spacing: 4px;">
+          ★★★★★
+        </div>
+
+        <div style="font-size: 1.25rem; font-weight: 800; color: #000000; margin-bottom: 0.5rem;">
+          RATE US ON GOOGLE
+        </div>
+        <p style="font-size: 0.875rem; color: #4b5563; margin-bottom: 1.5rem;">
+          Point your phone camera at the QR code below
+        </p>
+
+        <!-- QR Matrix -->
+        <div id="printCardQrBox" style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
+          <!-- Inline SVG QR -->
+        </div>
+
+        <div style="font-size: 0.75rem; color: #6b7280; font-family: monospace;" id="printCardUrl">
+          https://reviewhub.example.com/slug
+        </div>
+
+        <div style="margin-top: 1.5rem; font-size: 0.75rem; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 0.75rem;">
+          ReviewHub Counter Display Stand · Place at register / checkout
+        </div>
+      </div>
+    </div>
+
+  </div>
+</Layout>
+
+<style>
+  /* Admin Page Scoped Layout & Modal Styles */
+  .admin-page-container {
+    min-height: calc(100vh - 65px);
+  }
+
+  .business-list-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .biz-card-item {
+    background: var(--bg-surface);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    transition: all 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .biz-card-item:hover {
+    border-color: rgba(99, 102, 241, 0.4);
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4);
+    transform: translateY(-2px);
+  }
+
+  .biz-card-item::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--card-brand, #2563eb);
+  }
+
+  /* Color preset dot */
+  .color-preset-dot {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: transform 0.15s;
+  }
+
+  .color-preset-dot:hover {
+    transform: scale(1.2);
+  }
+
+  /* Modal Backdrop */
+  .modal-backdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(8px);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    overflow-y: auto;
+  }
+
+  .modal-dialog {
+    width: 100%;
+    max-width: 980px;
+    background: #111827;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.75rem;
+    border-bottom: 1px solid var(--border-subtle);
+    background: #1f2937;
+  }
+
+  .modal-body-split {
+    display: grid;
+    grid-template-columns: 1.3fr 0.9fr;
+    gap: 1.5rem;
+    padding: 1.75rem;
+    overflow-y: auto;
+  }
+
+  @media (max-width: 860px) {
+    .modal-body-split {
+      grid-template-columns: 1fr;
+    }
+    .phone-mockup-wrapper {
+      display: none;
+    }
+  }
+
+  /* Smartphone Frame */
+  .smartphone-frame {
+    width: 100%;
+    max-width: 280px;
+    height: 520px;
+    margin: 0 auto;
+    background: #000000;
+    border: 8px solid #2d3748;
+    border-radius: 36px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+    position: relative;
+    overflow: hidden;
+    padding: 12px 8px;
+  }
+
+  .smartphone-screen {
+    width: 100%;
+    height: 100%;
+    background: #111827;
+    border-radius: 24px;
+    padding: 1.25rem 0.75rem;
+    text-align: center;
+    overflow-y: auto;
+    position: relative;
+  }
+
+  /* Toggle Switch */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 48px;
+    height: 26px;
+  }
+
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #374151;
+    transition: 0.3s;
+  }
+
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 20px;
+    width: 20px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: 0.3s;
+  }
+
+  input:checked + .slider {
+    background-color: #10b981;
+  }
+
+  input:checked + .slider:before {
+    transform: translateX(22px);
+  }
+
+  .slider.round {
+    border-radius: 34px;
+  }
+
+  .slider.round:before {
+    border-radius: 50%;
+  }
+</style>
+
+<script>
+  import { DatabaseService, getSupabaseConfig, supabase } from '../../lib/supabase';
+  import { QRCode } from '../../utils/qrcode';
+  import type { Business, AnalyticsSummary } from '../../types';
+
+  // State
+  let businesses: Business[] = [];
+  let selectedBizForQr: Business | null = null;
+  let activeTabName = 'businessesTab';
+
+  function getSupabaseErrorMessage(error: unknown): string {
+    if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
+      const hint = 'hint' in error && typeof error.hint === 'string' ? `\nHint: ${error.hint}` : '';
+      return `${error.message}${hint}`;
+    }
+    return 'An unexpected error occurred.';
+  }
+
+  // DOM references
+  const backendStatusPill = document.getElementById('backendStatusPill');
+  const backendStatusText = document.getElementById('backendStatusText');
+  const adminUserEmail = document.getElementById('adminUserEmail');
+  const signOutBtn = document.getElementById('signOutBtn') as HTMLButtonElement;
+  const bizCountBadge = document.getElementById('bizCountBadge');
+  const businessListContainer = document.getElementById('businessListContainer');
+  const searchBizInput = document.getElementById('searchBizInput') as HTMLInputElement;
+
+  // Tabs
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
+
+  // Modal
+  const bizModal = document.getElementById('bizModal');
+  const modalTitle = document.getElementById('modalTitle');
+  const openNewBizBtn = document.getElementById('openNewBizBtn');
+  const closeModalBtn = document.getElementById('closeModalBtn');
+  const cancelFormBtn = document.getElementById('cancelFormBtn');
+  const bizForm = document.getElementById('bizForm') as HTMLFormElement;
+
+  // Form inputs
+  const formBizId = document.getElementById('formBizId') as HTMLInputElement;
+  const formName = document.getElementById('formName') as HTMLInputElement;
+  const formSlug = document.getElementById('formSlug') as HTMLInputElement;
+  const formLogoUrl = document.getElementById('formLogoUrl') as HTMLInputElement;
+  const formBrandColor = document.getElementById('formBrandColor') as HTMLInputElement;
+  const formBrandColorText = document.getElementById('formBrandColorText') as HTMLInputElement;
+  const formTagline = document.getElementById('formTagline') as HTMLInputElement;
+  const formGoogleUrl = document.getElementById('formGoogleUrl') as HTMLInputElement;
+  const formWaNumber = document.getElementById('formWaNumber') as HTMLInputElement;
+  const formWaMessage = document.getElementById('formWaMessage') as HTMLInputElement;
+  const formPhone = document.getElementById('formPhone') as HTMLInputElement;
+  const formInsta = document.getElementById('formInsta') as HTMLInputElement;
+  const formFb = document.getElementById('formFb') as HTMLInputElement;
+  const formCustomMsg = document.getElementById('formCustomMsg') as HTMLTextAreaElement;
+  const formIsActive = document.getElementById('formIsActive') as HTMLInputElement;
+  const reassignSlugNotice = document.getElementById('reassignSlugNotice');
+  const slugAvailabilityBadge = document.getElementById('slugAvailabilityBadge');
+
+  // Phone preview elements
+  const prevImg = document.getElementById('prevImg') as HTMLImageElement;
+  const prevName = document.getElementById('prevName');
+  const prevTagline = document.getElementById('prevTagline');
+  const prevWa = document.getElementById('prevWa');
+  const prevMsg = document.getElementById('prevMsg');
+
+  // QR Studio elements
+  const qrBizSelect = document.getElementById('qrBizSelect') as HTMLSelectElement;
+  const qrEncodedUrlInput = document.getElementById('qrEncodedUrlInput') as HTMLInputElement;
+  const qrColorPicker = document.getElementById('qrColorPicker') as HTMLInputElement;
+  const qrPreviewContainer = document.getElementById('qrPreviewContainer');
+  const qrPreviewBizName = document.getElementById('qrPreviewBizName');
+  const qrPreviewTagline = document.getElementById('qrPreviewTagline');
+  const qrExportCanvas = document.getElementById('qrExportCanvas') as HTMLCanvasElement;
+  const copyQrUrlBtn = document.getElementById('copyQrUrlBtn');
+  const qrMatchBrandBtn = document.getElementById('qrMatchBrandBtn');
+  const qrResetBlackBtn = document.getElementById('qrResetBlackBtn');
+  const downloadPngBtn = document.getElementById('downloadPngBtn');
+  const downloadSvgBtn = document.getElementById('downloadSvgBtn');
+  const openPrintCardBtn = document.getElementById('openPrintCardBtn');
+
+  // Analytics elements
+  const statTotalViews = document.getElementById('statTotalViews');
+  const statReviewClicks = document.getElementById('statReviewClicks');
+  const statWaClicks = document.getElementById('statWaClicks');
+  const statSocialClicks = document.getElementById('statSocialClicks');
+  const statAvgConversion = document.getElementById('statAvgConversion');
+  const analyticsTableBody = document.getElementById('analyticsTableBody');
+  const liveActivityFeed = document.getElementById('liveActivityFeed');
+
+  // Supabase Modal
+  const supabaseSetupModalBtn = document.getElementById('supabaseSetupModalBtn');
+  const supabaseModal = document.getElementById('supabaseModal');
+  const closeSupabaseModalBtn = document.getElementById('closeSupabaseModalBtn');
+  const copySqlBtn = document.getElementById('copySqlBtn');
+  const copySqlBtnText = document.getElementById('copySqlBtnText');
+  const sqlCodeTextarea = document.getElementById('sqlCodeTextarea') as HTMLTextAreaElement;
+
+  // Print Tent Card elements
+  const printableTentCard = document.getElementById('printableTentCard');
+  const printCardLogo = document.getElementById('printCardLogo') as HTMLImageElement;
+  const printCardTitle = document.getElementById('printCardTitle');
+  const printCardTagline = document.getElementById('printCardTagline');
+  const printCardQrBox = document.getElementById('printCardQrBox');
+  const printCardUrl = document.getElementById('printCardUrl');
+
+  // Init
+  async function loadData() {
+    if (!supabase) {
+      window.location.replace('/admin/login');
+      return;
+    }
+
+    const { data: authData, error: authError } = await supabase.auth.getUser();
+    if (authError || !authData.user) {
+      window.location.replace('/admin/login');
+      return;
+    }
+    if (adminUserEmail) adminUserEmail.textContent = authData.user.email || 'Signed in';
+
+    const config = getSupabaseConfig();
+    if (backendStatusPill && backendStatusText) {
+      if (config.isConfigured) {
+        backendStatusPill.className = 'status-pill online';
+        backendStatusText.textContent = 'Supabase Connected';
+      } else {
+        backendStatusPill.className = 'status-pill local';
+        backendStatusText.textContent = 'Supabase configuration required';
+      }
+    }
+
+    try {
+      businesses = await DatabaseService.getBusinesses();
+    } catch (error) {
+      console.error('Unable to load businesses from Supabase:', error);
+      if (backendStatusPill && backendStatusText) {
+        backendStatusPill.className = 'status-pill local';
+        backendStatusText.textContent = 'Supabase unavailable';
+      }
+      if (businessListContainer) {
+        businessListContainer.innerHTML = `<div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--text-muted);">Unable to load Supabase data. Confirm the environment variables and database schema, then refresh.</div>`;
+      }
+      return;
+    }
+    if (bizCountBadge) bizCountBadge.textContent = String(businesses.length);
+    renderBusinessesList();
+    populateQrStudio();
+    renderAnalytics();
+  }
+
+  // Render business cards
+  function renderBusinessesList(filter = '') {
+    if (!businessListContainer) return;
+    const query = filter.toLowerCase().trim();
+    const filtered = businesses.filter(
+      (b) => b.name.toLowerCase().includes(query) || b.slug.toLowerCase().includes(query)
+    );
+
+    if (filtered.length === 0) {
+      businessListContainer.innerHTML = `
+        <div style="grid-column: 1 / -1; text-align: center; padding: 4rem 1rem; color: var(--text-muted);">
+          <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🏢</div>
+          <div style="font-size: 1.125rem; font-weight: 600; color: #ffffff;">No businesses found</div>
+          <p style="font-size: 0.875rem; margin-top: 0.25rem;">Try adjusting your search or add a new business.</p>
+        </div>
+      `;
+      return;
+    }
+
+    businessListContainer.innerHTML = filtered
+      .map((b) => {
+        const fullUrl = `${window.location.origin}/${b.slug}`;
+        return `
+          <div class="biz-card-item" style="--card-brand: ${b.brand_color};">
+            <div>
+              <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.875rem;">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                  <img
+                    src="${b.logo_url || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=120&auto=format&fit=crop&q=80'}"
+                    alt="${b.name}"
+                    style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; border: 2px solid ${b.brand_color};"
+                  />
+                  <div>
+                    <h3 style="font-size: 1.0625rem; font-weight: 700; color: #ffffff; line-height: 1.2;">
+                      ${b.name}
+                    </h3>
+                    <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.2rem;">
+                      <a href="/${b.slug}" target="_blank" style="font-size: 0.75rem; color: #818cf8; font-family: monospace;" title="Open counter page">
+                        /${b.slug} ↗
+                      </a>
+                    </div>
+                  </div>
+                </div>
+
+                <span class="status-pill ${b.is_active ? 'online' : 'local'}" style="font-size: 0.7rem;">
+                  ${b.is_active ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+
+              <p style="font-size: 0.8125rem; color: var(--text-muted); line-height: 1.4; margin-bottom: 1rem; min-height: 2.4em;">
+                ${b.tagline || 'Specialty Local Service'}
+              </p>
+
+              <!-- Quick action links preview -->
+              <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; font-size: 0.75rem;">
+                <span style="background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 4px; color: #60a5fa;" title="Google Review Link">
+                  ★ Google Linked
+                </span>
+                ${b.whatsapp_number ? `<span style="background: rgba(37,211,102,0.1); padding: 0.2rem 0.5rem; border-radius: 4px; color: #4ade80;">💬 WhatsApp</span>` : ''}
+                ${b.phone_number ? `<span style="background: rgba(56,189,248,0.1); padding: 0.2rem 0.5rem; border-radius: 4px; color: #38bdf8;">📞 Phone</span>` : ''}
+              </div>
+            </div>
+
+            <!-- Footer actions -->
+            <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-subtle); padding-top: 0.875rem; gap: 0.5rem;">
+              <button class="btn btn-outline btn-sm copy-slug-btn" data-url="${fullUrl}" title="Copy QR Counter URL">
+                <span>📋 Copy Link</span>
+              </button>
+
+              <div style="display: flex; gap: 0.35rem;">
+                <button class="btn btn-outline btn-sm open-qr-btn" data-id="${b.id}" title="Generate QR Code">
+                  <span>QR Code</span>
+                </button>
+                <button class="btn btn-secondary btn-sm edit-biz-btn" data-id="${b.id}" title="Edit Business Details">
+                  <span>Edit</span>
+                </button>
+                <button class="btn btn-danger btn-sm delete-biz-btn" data-id="${b.id}" data-name="${b.name}" title="Delete Business">
+                  <span>✕</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      })
+      .join('');
+
+    // Attach event listeners to card buttons
+    attachCardListeners();
+  }
+
+  function attachCardListeners() {
+    // Copy link
+    document.querySelectorAll('.copy-slug-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const target = e.currentTarget as HTMLElement;
+        const url = target.dataset.url || '';
+        navigator.clipboard.writeText(url);
+        const originalText = target.innerHTML;
+        target.innerHTML = '<span>✓ Copied!</span>';
+        setTimeout(() => {
+          target.innerHTML = originalText;
+        }, 1500);
+      });
+    });
+
+    // Edit business
+    document.querySelectorAll('.edit-biz-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const id = (e.currentTarget as HTMLElement).dataset.id;
+        const biz = businesses.find((b) => b.id === id);
+        if (biz) openEditModal(biz);
+      });
+    });
+
+    // Open QR Studio for business
+    document.querySelectorAll('.open-qr-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const id = (e.currentTarget as HTMLElement).dataset.id;
+        const biz = businesses.find((b) => b.id === id);
+        if (biz) {
+          switchTab('qrStudioTab');
+          if (qrBizSelect) {
+            qrBizSelect.value = biz.id;
+            updateQrStudio(biz);
+          }
+        }
+      });
+    });
+
+    // Delete business
+    document.querySelectorAll('.delete-biz-btn').forEach((btn) => {
+      btn.addEventListener('click', async (e) => {
+        const target = e.currentTarget as HTMLElement;
+        const id = target.dataset.id;
+        const name = target.dataset.name;
+        if (!id) return;
+        const confirmDelete = window.confirm(
+          `Are you sure you want to delete "${name}"?\nThis business and its counter landing page will be removed.`
+        );
+        if (confirmDelete) {
+          try {
+            await DatabaseService.deleteBusiness(id);
+            await loadData();
+          } catch (error) {
+            console.error('Unable to delete business from Supabase:', error);
+            alert(`Unable to delete from Supabase.\n\n${getSupabaseErrorMessage(error)}`);
+          }
+        }
+      });
+    });
+  }
+
+  // Switch tabs
+  function switchTab(targetTabId: string) {
+    activeTabName = targetTabId;
+    tabButtons.forEach((btn) => {
+      if (btn.getAttribute('data-tab') === targetTabId) {
+        btn.classList.add('active');
+      } else {
+        btn.classList.remove('active');
+      }
+    });
+
+    tabContents.forEach((content) => {
+      if (content.id === targetTabId) {
+        (content as HTMLElement).style.display = 'block';
+      } else {
+        (content as HTMLElement).style.display = 'none';
+      }
+    });
+
+    if (targetTabId === 'analyticsTab') {
+      renderAnalytics();
+    }
+  }
+
+  tabButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const tabId = btn.getAttribute('data-tab');
+      if (tabId) switchTab(tabId);
+    });
+  });
+
+  // Search input
+  searchBizInput?.addEventListener('input', (e) => {
+    renderBusinessesList((e.target as HTMLInputElement).value);
+  });
+
+  // Modal open / close
+  function openCreateModal() {
+    if (!bizModal) return;
+    if (modalTitle) modalTitle.textContent = 'Add New Business & Counter Slug';
+    formBizId.value = '';
+    formName.value = '';
+    formSlug.value = '';
+    formLogoUrl.value = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop&q=80';
+    formBrandColor.value = '#2563eb';
+    formBrandColorText.value = '#2563eb';
+    formTagline.value = '';
+    formGoogleUrl.value = '';
+    formWaNumber.value = '';
+    formWaMessage.value = 'Hi! I visited your counter and would like to chat.';
+    formPhone.value = '';
+    formInsta.value = '';
+    formFb.value = '';
+    formCustomMsg.value = 'Thank you for visiting! Your Google review helps our local team grow.';
+    formIsActive.checked = true;
+    if (reassignSlugNotice) reassignSlugNotice.style.display = 'none';
+
+    syncPhonePreview();
+    bizModal.style.display = 'flex';
+  }
+
+  function openEditModal(biz: Business) {
+    if (!bizModal) return;
+    if (modalTitle) modalTitle.textContent = `Edit Business (${biz.name})`;
+    formBizId.value = biz.id;
+    formName.value = biz.name;
+    formSlug.value = biz.slug;
+    formLogoUrl.value = biz.logo_url || '';
+    formBrandColor.value = biz.brand_color || '#2563eb';
+    formBrandColorText.value = biz.brand_color || '#2563eb';
+    formTagline.value = biz.tagline || '';
+    formGoogleUrl.value = biz.google_review_url || '';
+    formWaNumber.value = biz.whatsapp_number || '';
+    formWaMessage.value = biz.whatsapp_message || '';
+    formPhone.value = biz.phone_number || '';
+    formInsta.value = biz.instagram_url || '';
+    formFb.value = biz.facebook_url || '';
+    formCustomMsg.value = biz.custom_message || '';
+    formIsActive.checked = biz.is_active;
+
+    // Show reassign notification banner
+    if (reassignSlugNotice) reassignSlugNotice.style.display = 'block';
+
+    syncPhonePreview();
+    bizModal.style.display = 'flex';
+  }
+
+  function closeModal() {
+    if (bizModal) bizModal.style.display = 'none';
+  }
+
+  openNewBizBtn?.addEventListener('click', openCreateModal);
+  closeModalBtn?.addEventListener('click', closeModal);
+  cancelFormBtn?.addEventListener('click', closeModal);
+
+  // Auto slug generator from business name (only if slug not manually edited)
+  formName?.addEventListener('input', () => {
+    if (!formBizId.value) {
+      const generated = formName.value
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      formSlug.value = generated;
+    }
+    syncPhonePreview();
+  });
+
+  // Color syncing
+  formBrandColor?.addEventListener('input', () => {
+    formBrandColorText.value = formBrandColor.value;
+    syncPhonePreview();
+  });
+
+  formBrandColorText?.addEventListener('input', () => {
+    if (/^#[0-9a-fA-F]{6}$/.test(formBrandColorText.value)) {
+      formBrandColor.value = formBrandColorText.value;
+      syncPhonePreview();
+    }
+  });
+
+  document.querySelectorAll('.color-preset-dot').forEach((dot) => {
+    dot.addEventListener('click', (e) => {
+      const col = (e.currentTarget as HTMLElement).dataset.color;
+      if (col) {
+        formBrandColor.value = col;
+        formBrandColorText.value = col;
+        syncPhonePreview();
+      }
+    });
+  });
+
+  // Form input listeners for live smartphone preview
+  [
+    formName,
+    formSlug,
+    formLogoUrl,
+    formTagline,
+    formCustomMsg,
+    formWaNumber,
+    formIsActive,
+  ].forEach((input) => {
+    input?.addEventListener('input', syncPhonePreview);
+  });
+
+  function syncPhonePreview() {
+    const col = formBrandColor.value || '#2563eb';
+    const name = formName.value || 'Business Name';
+    const tagline = formTagline.value || 'Tagline appears here';
+    const logo = formLogoUrl.value || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop&q=80';
+    const msg = formCustomMsg.value;
+    const hasWa = Boolean(formWaNumber.value);
+
+    if (prevImg) prevImg.src = logo;
+    if (prevName) prevName.textContent = name;
+    if (prevTagline) prevTagline.textContent = tagline;
+    if (prevWa) {
+      prevWa.style.display = hasWa ? 'block' : 'none';
+    }
+    if (prevMsg) {
+      prevMsg.textContent = msg || '';
+    }
+
+    const mockup = document.getElementById('livePhoneMockup');
+    if (mockup) {
+      mockup.style.setProperty('--brand', col);
+    }
+  }
+
+  // Save form handler
+  bizForm?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = formBizId.value || undefined;
+    const name = formName.value.trim();
+    const slug = formSlug.value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-');
+
+    if (!name || !slug) {
+      alert('Please provide both Business Name and URL Slug.');
+      return;
+    }
+
+    const payload: Partial<Business> & { name: string; slug: string } = {
+      id,
+      name,
+      slug,
+      logo_url: formLogoUrl.value.trim(),
+      brand_color: formBrandColor.value,
+      tagline: formTagline.value.trim(),
+      google_review_url: formGoogleUrl.value.trim(),
+      whatsapp_number: formWaNumber.value.trim(),
+      whatsapp_message: formWaMessage.value.trim(),
+      phone_number: formPhone.value.trim(),
+      instagram_url: formInsta.value.trim(),
+      facebook_url: formFb.value.trim(),
+      custom_message: formCustomMsg.value.trim(),
+      is_active: formIsActive.checked,
+    };
+
+    try {
+      await DatabaseService.saveBusiness(payload);
+      closeModal();
+      await loadData();
+    } catch (error) {
+      console.error('Unable to save business to Supabase:', error);
+      alert(`Unable to save to Supabase.\n\n${getSupabaseErrorMessage(error)}`);
+    }
+  });
+
+  // ============================================================================
+  // QR Studio Functions
+  // ============================================================================
+  function populateQrStudio() {
+    if (!qrBizSelect) return;
+    qrBizSelect.innerHTML = businesses
+      .map((b) => `<option value="${b.id}">${b.name} (/${b.slug})</option>`)
+      .join('');
+
+    if (businesses.length > 0) {
+      const selectedId = qrBizSelect.value || businesses[0].id;
+      const b = businesses.find((x) => x.id === selectedId) || businesses[0];
+      updateQrStudio(b);
+    }
+  }
+
+  qrBizSelect?.addEventListener('change', () => {
+    const b = businesses.find((x) => x.id === qrBizSelect.value);
+    if (b) updateQrStudio(b);
+  });
+
+  function updateQrStudio(biz: Business) {
+    selectedBizForQr = biz;
+    const fullUrl = `${window.location.origin}/${biz.slug}`;
+    if (qrEncodedUrlInput) qrEncodedUrlInput.value = fullUrl;
+    if (qrPreviewBizName) qrPreviewBizName.textContent = biz.name;
+    if (qrPreviewTagline) qrPreviewTagline.textContent = `/${biz.slug}`;
+
+    renderQrCode();
+  }
+
+  function renderQrCode() {
+    if (!selectedBizForQr || !qrPreviewContainer) return;
+    const fullUrl = `${window.location.origin}/${selectedBizForQr.slug}`;
+    const color = qrColorPicker?.value || '#000000';
+
+    const qr = new QRCode(fullUrl);
+    const svgString = qr.toSVG({
+      color,
+      bgColor: '#ffffff',
+      margin: 2,
+      size: 240,
+    });
+
+    qrPreviewContainer.innerHTML = svgString;
+
+    // Render to export canvas for PNG download
+    if (qrExportCanvas) {
+      qr.renderToCanvas(qrExportCanvas, {
+        color,
+        bgColor: '#ffffff',
+        margin: 3,
+        size: 1024,
+      });
+    }
+  }
+
+  qrColorPicker?.addEventListener('input', renderQrCode);
+
+  qrMatchBrandBtn?.addEventListener('click', () => {
+    if (selectedBizForQr && qrColorPicker) {
+      qrColorPicker.value = selectedBizForQr.brand_color || '#2563eb';
+      renderQrCode();
+    }
+  });
+
+  qrResetBlackBtn?.addEventListener('click', () => {
+    if (qrColorPicker) {
+      qrColorPicker.value = '#000000';
+      renderQrCode();
+    }
+  });
+
+  copyQrUrlBtn?.addEventListener('click', () => {
+    if (qrEncodedUrlInput) {
+      navigator.clipboard.writeText(qrEncodedUrlInput.value);
+      alert('URL copied to clipboard: ' + qrEncodedUrlInput.value);
+    }
+  });
+
+  // Download PNG (1024x1024)
+  downloadPngBtn?.addEventListener('click', () => {
+    if (!selectedBizForQr || !qrExportCanvas) return;
+    const link = document.createElement('a');
+    link.download = `reviewhub-qr-${selectedBizForQr.slug}.png`;
+    link.href = qrExportCanvas.toDataURL('image/png');
+    link.click();
+  });
+
+  // Download SVG
+  downloadSvgBtn?.addEventListener('click', () => {
+    if (!selectedBizForQr) return;
+    const fullUrl = `${window.location.origin}/${selectedBizForQr.slug}`;
+    const color = qrColorPicker?.value || '#000000';
+    const qr = new QRCode(fullUrl);
+    const svg = qr.toSVG({ color, bgColor: '#ffffff', margin: 2, size: 512 });
+
+    const blob = new Blob([svg], { type: 'image/svg+xml' });
+    const link = document.createElement('a');
+    link.download = `reviewhub-qr-${selectedBizForQr.slug}.svg`;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+  });
+
+  // Open 1-Click Printable Counter Tent Stand
+  openPrintCardBtn?.addEventListener('click', () => {
+    if (!selectedBizForQr) return;
+    const fullUrl = `${window.location.origin}/${selectedBizForQr.slug}`;
+    const qr = new QRCode(fullUrl);
+    const qrSvg = qr.toSVG({ color: '#000000', bgColor: '#ffffff', margin: 2, size: 260 });
+
+    if (printCardLogo) printCardLogo.src = selectedBizForQr.logo_url || '';
+    if (printCardTitle) printCardTitle.textContent = selectedBizForQr.name;
+    if (printCardTagline) printCardTagline.textContent = selectedBizForQr.tagline || 'Specialty Local Service';
+    if (printCardQrBox) printCardQrBox.innerHTML = qrSvg;
+    if (printCardUrl) printCardUrl.textContent = fullUrl;
+
+    window.print();
+  });
+
+  // ============================================================================
+  // Analytics Dashboard
+  // ============================================================================
+  async function renderAnalytics() {
+    let totalViews = 0;
+    let totalReviews = 0;
+    let totalWa = 0;
+    let totalCalls = 0;
+    let totalSocials = 0;
+    const summaries: AnalyticsSummary[] = [];
+
+    for (const biz of businesses) {
+      const summary = await DatabaseService.getAnalytics(biz.id, biz.slug);
+      summaries.push(summary);
+      totalViews += summary.page_views;
+      totalReviews += summary.google_review_clicks;
+      totalWa += summary.whatsapp_clicks;
+      totalCalls += summary.call_clicks;
+      totalSocials += summary.instagram_clicks + summary.facebook_clicks;
+    }
+
+    if (statTotalViews) statTotalViews.textContent = String(totalViews);
+    if (statReviewClicks) statReviewClicks.textContent = String(totalReviews);
+    if (statWaClicks) statWaClicks.textContent = String(totalWa);
+    if (statSocialClicks) statSocialClicks.textContent = String(totalCalls + totalSocials);
+    if (statAvgConversion) {
+      const avgRate = totalViews > 0 ? Math.round((totalReviews / totalViews) * 100) : 0;
+      statAvgConversion.textContent = `${avgRate}%`;
+    }
+
+    // Populate Table
+    if (analyticsTableBody) {
+      analyticsTableBody.innerHTML = summaries
+        .map((s) => {
+          const biz = businesses.find((b) => b.id === s.business_id);
+          return `
+            <tr style="border-bottom: 1px solid var(--border-subtle);">
+              <td style="padding: 1rem;">
+                <div style="font-weight: 700; color: #ffffff;">${biz ? biz.name : s.slug}</div>
+                <div style="font-size: 0.75rem; color: #818cf8; font-family: monospace;">/${s.slug}</div>
+              </td>
+              <td style="padding: 1rem; text-align: center; font-weight: 600;">${s.page_views}</td>
+              <td style="padding: 1rem; text-align: center; font-weight: 700; color: #60a5fa;">${s.google_review_clicks}</td>
+              <td style="padding: 1rem; text-align: center; font-weight: 600; color: #4ade80;">${s.whatsapp_clicks}</td>
+              <td style="padding: 1rem; text-align: center; font-weight: 600; color: #38bdf8;">${s.call_clicks + s.instagram_clicks + s.facebook_clicks}</td>
+              <td style="padding: 1rem; text-align: center;">
+                <div style="display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                  <div style="width: 60px; height: 6px; background: #374151; border-radius: 3px; overflow: hidden;">
+                    <div style="width: ${Math.min(100, s.conversion_rate)}%; height: 100%; background: #fbbf24;"></div>
+                  </div>
+                  <span style="font-weight: 700; color: #fde047;">${s.conversion_rate}%</span>
+                </div>
+              </td>
+            </tr>
+          `;
+        })
+        .join('');
+    }
+
+    // Populate Live Activity Feed
+    if (liveActivityFeed) {
+      const feedItems: { text: string; time: string; icon: string }[] = [];
+      summaries.forEach((s) => {
+        const biz = businesses.find((b) => b.id === s.business_id);
+        const name = biz ? biz.name : s.slug;
+        if (s.google_review_clicks > 0) {
+          feedItems.push({
+            text: `Customer rated 5-stars on Google for <strong>${name}</strong>`,
+            time: '5 mins ago',
+            icon: '⭐',
+          });
+        }
+        if (s.whatsapp_clicks > 0) {
+          feedItems.push({
+            text: `Customer initiated WhatsApp chat with <strong>${name}</strong>`,
+            time: '18 mins ago',
+            icon: '💬',
+          });
+        }
+        if (s.page_views > 0) {
+          feedItems.push({
+            text: `QR code scanned at counter for <strong>${name}</strong>`,
+            time: '24 mins ago',
+            icon: '📱',
+          });
+        }
+      });
+
+      if (feedItems.length === 0) {
+        liveActivityFeed.innerHTML = `
+          <div style="text-align: center; color: var(--text-muted); padding: 1.5rem;">
+            No interactions recorded yet. Scan a counter card to see live interactions here!
+          </div>
+        `;
+      } else {
+        liveActivityFeed.innerHTML = feedItems
+          .map(
+            (item) => `
+            <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); border-radius: 8px;">
+              <div style="display: flex; align-items: center; gap: 0.75rem; font-size: 0.85rem; color: #e5e7eb;">
+                <span>${item.icon}</span>
+                <span>${item.text}</span>
+              </div>
+              <span style="font-size: 0.75rem; color: var(--text-dim);">${item.time}</span>
+            </div>
+          `
+          )
+          .join('');
+      }
+    }
+  }
+
+  // ============================================================================
+  // Supabase Setup Modal
+  // ============================================================================
+  supabaseSetupModalBtn?.addEventListener('click', () => {
+    if (supabaseModal) supabaseModal.style.display = 'flex';
+  });
+
+  closeSupabaseModalBtn?.addEventListener('click', () => {
+    if (supabaseModal) supabaseModal.style.display = 'none';
+  });
+
+  copySqlBtn?.addEventListener('click', () => {
+    if (sqlCodeTextarea && copySqlBtnText) {
+      navigator.clipboard.writeText(sqlCodeTextarea.value);
+      copySqlBtnText.textContent = '✓ Copied to Clipboard!';
+      setTimeout(() => {
+        copySqlBtnText.textContent = 'Copy Migration SQL';
+      }, 2000);
+    }
+  });
+
+  // Start
+  signOutBtn?.addEventListener('click', async () => {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    window.location.replace('/admin/login');
+  });
+
+  loadData();
+</script>

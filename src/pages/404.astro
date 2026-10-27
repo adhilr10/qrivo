@@ -1,0 +1,360 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+---
+
+<Layout title="ReviewHub Counter Card" hideNav={true}>
+  <div class="counter-page-wrapper" id="counterPageWrapper">
+
+    <!-- Resolving / Connecting State -->
+    <div class="counter-card" id="resolvingCard">
+      <div style="padding: 2.5rem 1rem; text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 1rem; animation: pulse 1.5s infinite;">⏳</div>
+        <h2 style="font-size: 1.25rem; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem;" id="resolvingStatus">
+          Connecting to Counter Card...
+        </h2>
+        <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 0;" id="resolvingNote">
+          Loading business details...
+        </p>
+      </div>
+    </div>
+
+    <!-- Active Business Counter View -->
+    <div class="counter-card" id="activeBizCard" style="display: none;">
+      <!-- Brand Logo -->
+      <div class="biz-logo-container">
+        <img
+          id="bizLogoImg"
+          src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop&q=80"
+          alt="Business Logo"
+          class="biz-logo-img"
+          loading="eager"
+        />
+      </div>
+
+      <!-- Verified Badge -->
+      <div>
+        <span class="verified-pill">
+          <Icon name="shield-check" size={13} fill="#60a5fa" />
+          <span>Verified Local Business</span>
+        </span>
+      </div>
+
+      <!-- Business Name & Tagline -->
+      <h1 class="biz-title" id="bizTitle">Loading Business...</h1>
+      <p class="biz-tagline" id="bizTagline">Thank you for your visit!</p>
+
+      <!-- 5-Star Experience Rating Bar -->
+      <div class="rating-prompt-card">
+        <div class="rating-prompt-title">How was your experience today?</div>
+        <div class="stars-row" id="starsRow" title="Tap 5 stars to leave a review on Google">
+          <button type="button" class="star-btn" data-rating="1" aria-label="Rate 1 star">★</button>
+          <button type="button" class="star-btn" data-rating="2" aria-label="Rate 2 stars">★</button>
+          <button type="button" class="star-btn" data-rating="3" aria-label="Rate 3 stars">★</button>
+          <button type="button" class="star-btn" data-rating="4" aria-label="Rate 4 stars">★</button>
+          <button type="button" class="star-btn" data-rating="5" aria-label="Rate 5 stars">★</button>
+        </div>
+      </div>
+
+      <!-- Primary CTA: Rate us on Google -->
+      <a
+        id="googleCtaBtn"
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-primary-google"
+      >
+        <Icon name="google" size={24} />
+        <div style="text-align: left; flex: 1;">
+          <div style="font-size: 1.0625rem; font-weight: 700; line-height: 1.2;">Rate us on Google</div>
+          <div style="font-size: 0.75rem; color: #6b7280; font-weight: 500;">Takes 10 seconds · Direct link</div>
+        </div>
+        <div class="stars-badge-mini">
+          <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+        </div>
+      </a>
+
+      <!-- Secondary CTA: WhatsApp (Optional) -->
+      <a
+        id="whatsappCtaBtn"
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-secondary-wa"
+        style="display: none;"
+      >
+        <Icon name="whatsapp" size={20} fill="#ffffff" />
+        <span>Chat with us on WhatsApp</span>
+      </a>
+
+      <!-- Quick Social & Contact Action Grid -->
+      <div class="social-grid">
+        <a id="phoneBtn" href="#" class="social-action-btn" title="Call Us" style="display: none;">
+          <div class="social-icon-box">
+            <Icon name="phone" size={18} fill="#38bdf8" />
+          </div>
+          <span>Call</span>
+        </a>
+
+        <a id="waGridBtn" href="#" target="_blank" rel="noopener noreferrer" class="social-action-btn" title="WhatsApp" style="display: none;">
+          <div class="social-icon-box">
+            <Icon name="whatsapp" size={18} fill="#22c55e" />
+          </div>
+          <span>WhatsApp</span>
+        </a>
+
+        <a id="instagramBtn" href="#" target="_blank" rel="noopener noreferrer" class="social-action-btn" title="Instagram" style="display: none;">
+          <div class="social-icon-box">
+            <Icon name="instagram" size={18} fill="#e1306c" />
+          </div>
+          <span>Instagram</span>
+        </a>
+
+        <a id="facebookBtn" href="#" target="_blank" rel="noopener noreferrer" class="social-action-btn" title="Facebook" style="display: none;">
+          <div class="social-icon-box">
+            <Icon name="facebook" size={18} fill="#1877f2" />
+          </div>
+          <span>Facebook</span>
+        </a>
+      </div>
+
+      <!-- Optional Owner Thank-You Message -->
+      <div id="customMessage" class="custom-note" style="display: none;"></div>
+
+      <!-- Reusable QR Powered by ReviewHub Footer -->
+      <div class="counter-footer">
+        <span>Powered by</span>
+        <a href="/" target="_blank">ReviewHub</a>
+        <span>· Reusable Counter Stand</span>
+      </div>
+    </div>
+
+    <!-- Inactive or Replaced Business State -->
+    <div class="counter-card" id="inactiveBizCard" style="display: none;">
+      <div style="padding: 2.5rem 1rem; text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🏷️</div>
+        <h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;">
+          Counter Stand Temporarily Unavailable
+        </h2>
+        <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem;">
+          This business card is currently paused or undergoing updates by the administrator. 
+          The physical QR code remains valid and will automatically reconnect once updated.
+        </p>
+        <a href="/" class="btn btn-secondary btn-sm">
+          Return to ReviewHub Home
+        </a>
+      </div>
+    </div>
+
+    <!-- Not Found State -->
+    <div class="counter-card" id="notFoundCard" style="display: none;">
+      <div style="padding: 2.5rem 1rem; text-align: center;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+        <h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;">
+          Business Slug Not Found
+        </h2>
+        <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem;">
+          No active counter configuration was found for <code id="missingSlugCode" style="color: #818cf8;"></code>.
+          If you are the administrator, configure this slug in the Admin Portal.
+        </p>
+        <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+          <a href="/" class="btn btn-secondary btn-sm">Return Home</a>
+          <a href="/admin" class="btn btn-primary btn-sm">Open Admin Portal</a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</Layout>
+
+<style>
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.7; }
+  }
+</style>
+
+<script>
+  import { DatabaseService } from '../lib/supabase';
+  import type { Business, EventType } from '../types';
+
+  const rawPath = window.location.pathname.replace(/^\/|\/$/g, '').toLowerCase();
+
+  const resolvingCard = document.getElementById('resolvingCard');
+  const activeCard = document.getElementById('activeBizCard');
+  const inactiveCard = document.getElementById('inactiveBizCard');
+  const notFoundCard = document.getElementById('notFoundCard');
+  const missingSlugCode = document.getElementById('missingSlugCode');
+
+  const bizLogoImg = document.getElementById('bizLogoImg') as HTMLImageElement;
+  const bizTitle = document.getElementById('bizTitle');
+  const bizTagline = document.getElementById('bizTagline');
+  const customMessage = document.getElementById('customMessage');
+  const googleCtaBtn = document.getElementById('googleCtaBtn') as HTMLAnchorElement;
+  const whatsappCtaBtn = document.getElementById('whatsappCtaBtn') as HTMLAnchorElement;
+  const phoneBtn = document.getElementById('phoneBtn') as HTMLAnchorElement;
+  const waGridBtn = document.getElementById('waGridBtn') as HTMLAnchorElement;
+  const instagramBtn = document.getElementById('instagramBtn') as HTMLAnchorElement;
+  const facebookBtn = document.getElementById('facebookBtn') as HTMLAnchorElement;
+  const starsRow = document.getElementById('starsRow');
+
+  let currentBusiness: Business | null = null;
+
+  function showNotFound() {
+    if (resolvingCard) resolvingCard.style.display = 'none';
+    if (activeCard) activeCard.style.display = 'none';
+    if (inactiveCard) inactiveCard.style.display = 'none';
+    if (notFoundCard) notFoundCard.style.display = 'block';
+    if (missingSlugCode) missingSlugCode.textContent = `/${rawPath}`;
+  }
+
+  async function resolveSlug() {
+    if (!rawPath || rawPath === '404' || rawPath === '404.html') {
+      showNotFound();
+      return;
+    }
+
+    let biz: Business | null = null;
+    try {
+      biz = await DatabaseService.getBusinessBySlug(rawPath);
+    } catch (e) {
+      console.warn('Error resolving slug from Supabase:', e);
+    }
+
+    if (!biz) {
+      showNotFound();
+      return;
+    }
+
+    currentBusiness = biz;
+
+    // Inactive check
+    if (!biz.is_active) {
+      if (resolvingCard) resolvingCard.style.display = 'none';
+      if (notFoundCard) notFoundCard.style.display = 'none';
+      if (inactiveCard) inactiveCard.style.display = 'block';
+      return;
+    }
+
+    // Apply branding and show active card
+    document.title = `${biz.name} | Rate us on Google`;
+    document.documentElement.style.setProperty('--brand', biz.brand_color || '#2563eb');
+    document.documentElement.style.setProperty('--brand-glow', `${biz.brand_color || '#2563eb'}40`);
+
+    if (bizLogoImg && biz.logo_url) {
+      bizLogoImg.src = biz.logo_url;
+      bizLogoImg.alt = biz.name;
+    }
+    if (bizTitle) bizTitle.textContent = biz.name;
+    if (bizTagline) bizTagline.textContent = biz.tagline || 'Specialty Local Service';
+
+    if (customMessage) {
+      if (biz.custom_message) {
+        customMessage.textContent = biz.custom_message;
+        customMessage.style.display = 'block';
+      } else {
+        customMessage.style.display = 'none';
+      }
+    }
+
+    if (googleCtaBtn) {
+      googleCtaBtn.href = biz.google_review_url || '#';
+    }
+
+    const waUrl = biz.whatsapp_number
+      ? `https://wa.me/${biz.whatsapp_number.replace(/\D/g, '')}${
+          biz.whatsapp_message ? `?text=${encodeURIComponent(biz.whatsapp_message)}` : ''
+        }`
+      : '#';
+
+    if (whatsappCtaBtn) {
+      if (biz.whatsapp_number) {
+        whatsappCtaBtn.href = waUrl;
+        whatsappCtaBtn.style.display = 'flex';
+      } else {
+        whatsappCtaBtn.style.display = 'none';
+      }
+    }
+
+    if (phoneBtn) {
+      if (biz.phone_number) {
+        phoneBtn.href = `tel:${biz.phone_number.replace(/\s+/g, '')}`;
+        phoneBtn.style.display = 'flex';
+      } else {
+        phoneBtn.style.display = 'none';
+      }
+    }
+
+    if (waGridBtn) {
+      if (biz.whatsapp_number) {
+        waGridBtn.href = waUrl;
+        waGridBtn.style.display = 'flex';
+      } else {
+        waGridBtn.style.display = 'none';
+      }
+    }
+
+    if (instagramBtn) {
+      if (biz.instagram_url) {
+        instagramBtn.href = biz.instagram_url;
+        instagramBtn.style.display = 'flex';
+      } else {
+        instagramBtn.style.display = 'none';
+      }
+    }
+
+    if (facebookBtn) {
+      if (biz.facebook_url) {
+        facebookBtn.href = biz.facebook_url;
+        facebookBtn.style.display = 'flex';
+      } else {
+        facebookBtn.style.display = 'none';
+      }
+    }
+
+    if (resolvingCard) resolvingCard.style.display = 'none';
+    if (activeCard) activeCard.style.display = 'block';
+
+    // Track initial page_view anonymously
+    track('page_view');
+  }
+
+  function track(eventType: EventType) {
+    if (!currentBusiness) return;
+    void DatabaseService.trackEvent({
+      business_id: currentBusiness.id,
+      slug: currentBusiness.slug,
+      event_type: eventType,
+    }).catch((error) => console.warn('Supabase analytics error:', error));
+  }
+
+  // Click listeners for analytics
+  googleCtaBtn?.addEventListener('click', () => track('google_review_click'));
+  whatsappCtaBtn?.addEventListener('click', () => track('whatsapp_click'));
+  waGridBtn?.addEventListener('click', () => track('whatsapp_click'));
+  phoneBtn?.addEventListener('click', () => track('call_click'));
+  instagramBtn?.addEventListener('click', () => track('instagram_click'));
+  facebookBtn?.addEventListener('click', () => track('facebook_click'));
+
+  // Interactive 5-Star Rating Buttons
+  starsRow?.addEventListener('click', (e) => {
+    const target = (e.target as HTMLElement).closest('.star-btn');
+    if (!target) return;
+
+    target.animate([
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.4) rotate(15deg)' },
+      { transform: 'scale(1)' }
+    ], { duration: 350 });
+
+    track('google_review_click');
+
+    if (currentBusiness?.google_review_url) {
+      setTimeout(() => {
+        window.open(currentBusiness!.google_review_url, '_blank', 'noopener,noreferrer');
+      }, 250);
+    }
+  });
+
+  resolveSlug();
+</script>

@@ -1,0 +1,93 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="ReviewHub Admin Sign In" hideNav={true}>
+  <main class="auth-shell">
+    <section class="auth-card" aria-labelledby="auth-title">
+      <a href="/" class="auth-brand">ReviewHub</a>
+      <p class="auth-kicker">ADMIN PORTAL</p>
+      <h1 id="auth-title">Sign in to manage businesses</h1>
+      <p class="auth-copy">Use the administrator email and password created in Supabase to access business settings and analytics.</p>
+
+      <form id="authForm" class="auth-form">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="email" required placeholder="admin@example.com" />
+
+        <label for="password">Password</label>
+        <input id="password" name="password" type="password" autocomplete="current-password" required minlength="6" placeholder="At least 6 characters" />
+
+        <p id="authMessage" class="auth-message" role="status" aria-live="polite"></p>
+
+        <button id="signInBtn" class="btn btn-primary" type="submit">Sign in</button>
+      </form>
+
+      <p class="auth-footnote">Only accounts already created in Supabase Authentication can sign in.</p>
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .auth-shell { min-height: 100vh; display: grid; place-items: center; padding: 1.5rem; background: radial-gradient(circle at top, rgba(99, 102, 241, .22), transparent 42%), var(--bg-base); }
+  .auth-card { width: min(100%, 430px); padding: 2.25rem; border: 1px solid var(--border-subtle); border-radius: var(--radius-lg); background: rgba(17, 24, 39, .88); box-shadow: 0 24px 64px rgba(0, 0, 0, .35); }
+  .auth-brand { display: inline-block; color: #a5b4fc; font-weight: 800; text-decoration: none; margin-bottom: 1.75rem; }
+  .auth-kicker { margin: 0 0 .5rem; color: #818cf8; font-size: .75rem; font-weight: 700; letter-spacing: .12em; }
+  h1 { margin: 0; color: #fff; font-size: 1.65rem; line-height: 1.2; }
+  .auth-copy, .auth-footnote { color: var(--text-muted); font-size: .875rem; line-height: 1.55; }
+  .auth-form { display: grid; gap: .65rem; margin-top: 1.6rem; }
+  .auth-form label { color: #e5e7eb; font-size: .8125rem; font-weight: 600; margin-top: .35rem; }
+  .auth-form input { width: 100%; box-sizing: border-box; border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: .75rem .85rem; color: #fff; background: #111827; font: inherit; }
+  .auth-form button { justify-content: center; margin-top: .5rem; }
+  .auth-message { min-height: 1.25rem; margin: .35rem 0 0; color: #fbbf24; font-size: .8125rem; line-height: 1.4; }
+  .auth-message.success { color: #34d399; }
+  .auth-footnote { margin: 1.4rem 0 0; font-size: .75rem; }
+</style>
+
+<script>
+  import { supabase } from '../../lib/supabase';
+
+  const form = document.getElementById('authForm') as HTMLFormElement;
+  const emailInput = document.getElementById('email') as HTMLInputElement;
+  const passwordInput = document.getElementById('password') as HTMLInputElement;
+  const message = document.getElementById('authMessage');
+  const signInBtn = document.getElementById('signInBtn') as HTMLButtonElement;
+
+  function setMessage(text: string, success = false) {
+    if (!message) return;
+    message.textContent = text;
+    message.classList.toggle('success', success);
+  }
+
+  function setBusy(busy: boolean) {
+    signInBtn.disabled = busy;
+    signInBtn.textContent = busy ? 'Please wait…' : 'Sign in';
+  }
+
+  async function redirectIfAuthenticated() {
+    if (!supabase) return;
+    const { data } = await supabase.auth.getUser();
+    if (data.user) window.location.replace('/admin');
+  }
+
+  form?.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!supabase) {
+      setMessage('Supabase is not configured. Add the public URL and anon key to .env.');
+      return;
+    }
+    setBusy(true);
+    setMessage('');
+    const { error } = await supabase.auth.signInWithPassword({
+      email: emailInput.value.trim(),
+      password: passwordInput.value,
+    });
+    setBusy(false);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+    window.location.replace('/admin');
+  });
+
+  redirectIfAuthenticated();
+</script>

@@ -1,0 +1,392 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Icon from '../components/Icon.astro';
+import { DEMO_BUSINESSES } from '../lib/demo-businesses';
+import { DatabaseService } from '../lib/supabase';
+import type { Business } from '../types';
+
+export async function getStaticPaths() {
+  const list = [...DEMO_BUSINESSES];
+  try {
+    if (DatabaseService.isConfigured()) {
+      const fromDb = await DatabaseService.getBusinesses();
+      if (fromDb && fromDb.length > 0) {
+        const slugs = new Set(list.map((b) => b.slug));
+        for (const b of fromDb) {
+          if (!slugs.has(b.slug)) {
+            list.push(b);
+          }
+        }
+      }
+    }
+  } catch (e) {
+    // Keep demo businesses if Supabase is unavailable during build
+  }
+
+  return list.map((b) => ({
+    params: { slug: b.slug },
+    props: { initialBusiness: b },
+  }));
+}
+
+interface Props {
+  initialBusiness?: Business;
+}
+
+const { slug } = Astro.params;
+const { initialBusiness } = Astro.props as Props;
+
+// Prerendered markup is immediately refreshed from Supabase in the browser.
+const business = initialBusiness || DEMO_BUSINESSES.find((b) => b.slug === slug);
+const brandColor = business?.brand_color || '#2563eb';
+const pageTitle = business ? `${business.name} | Review on Google` : 'ReviewHub Counter Card';
+---
+
+<Layout title={pageTitle} brandColor={brandColor} hideNav={true}>
+  <div class="counter-page-wrapper" id="counterPageWrapper" data-slug={slug} data-biz-id={business?.id || ''}>
+    
+    <!-- Active Business Counter View -->
+    <div class="counter-card" id="activeBizCard" style={business && !business.is_active ? 'display: none;' : ''}>
+      
+      <!-- Brand Logo -->
+      <div class="biz-logo-container">
+        <img
+          id="bizLogoImg"
+          src={business?.logo_url || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop&q=80'}
+          alt={business?.name || 'Business Logo'}
+          class="biz-logo-img"
+          loading="eager"
+        />
+      </div>
+
+      <!-- Verified Badge -->
+      <div>
+        <span class="verified-pill">
+          <Icon name="shield-check" size={13} fill="#60a5fa" />
+          <span>Verified Local Business</span>
+        </span>
+      </div>
+
+      <!-- Business Name & Tagline -->
+      <h1 class="biz-title" id="bizTitle">{business?.name || 'Loading Business...'}</h1>
+      <p class="biz-tagline" id="bizTagline">{business?.tagline || 'Thank you for your visit!'}</p>
+
+      <!-- 5-Star Experience Rating Bar -->
+      <div class="rating-prompt-card">
+        <div class="rating-prompt-title">How was your experience today?</div>
+        <div class="stars-row" id="starsRow" title="Tap 5 stars to leave a review on Google">
+          <button type="button" class="star-btn" data-rating="1" aria-label="Rate 1 star">★</button>
+          <button type="button" class="star-btn" data-rating="2" aria-label="Rate 2 stars">★</button>
+          <button type="button" class="star-btn" data-rating="3" aria-label="Rate 3 stars">★</button>
+          <button type="button" class="star-btn" data-rating="4" aria-label="Rate 4 stars">★</button>
+          <button type="button" class="star-btn" data-rating="5" aria-label="Rate 5 stars">★</button>
+        </div>
+      </div>
+
+      <!-- Primary CTA: Rate us on Google -->
+      <a
+        id="googleCtaBtn"
+        href={business?.google_review_url || '#'}
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-primary-google"
+      >
+        <Icon name="google" size={24} />
+        <div style="text-align: left; flex: 1;">
+          <div style="font-size: 1.0625rem; font-weight: 700; line-height: 1.2;">Rate us on Google</div>
+          <div style="font-size: 0.75rem; color: #6b7280; font-weight: 500;">Takes 10 seconds · Direct link</div>
+        </div>
+        <div class="stars-badge-mini">
+          <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+        </div>
+      </a>
+
+      <!-- Secondary CTA: WhatsApp (Optional) -->
+      <a
+        id="whatsappCtaBtn"
+        href="#"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="btn-secondary-wa"
+        style={business?.whatsapp_number ? 'display: flex;' : 'display: none;'}
+      >
+        <Icon name="whatsapp" size={20} fill="#ffffff" />
+        <span>Chat with us on WhatsApp</span>
+      </a>
+
+      <!-- Quick Social & Contact Action Grid -->
+      <div class="social-grid">
+        <a id="phoneBtn" href="#" class="social-action-btn" title="Call Us">
+          <div class="social-icon-box">
+            <Icon name="phone" size={18} fill="#38bdf8" />
+          </div>
+          <span>Call</span>
+        </a>
+
+        <a id="waGridBtn" href="#" target="_blank" rel="noopener noreferrer" class="social-action-btn" title="WhatsApp">
+          <div class="social-icon-box">
+            <Icon name="whatsapp" size={18} fill="#22c55e" />
+          </div>
+          <span>WhatsApp</span>
+        </a>
+
+        <a id="instagramBtn" href="#" target="_blank" rel="noopener noreferrer" class="social-action-btn" title="Instagram">
+          <div class="social-icon-box">
+            <Icon name="instagram" size={18} fill="#e1306c" />
+          </div>
+          <span>Instagram</span>
+        </a>
+
+        <a id="facebookBtn" href="#" target="_blank" rel="noopener noreferrer" class="social-action-btn" title="Facebook">
+          <div class="social-icon-box">
+            <Icon name="facebook" size={18} fill="#1877f2" />
+          </div>
+          <span>Facebook</span>
+        </a>
+      </div>
+
+      <!-- Optional Owner Thank-You Message -->
+      <div id="customMessage" class="custom-note">
+        {business?.custom_message || 'Thank you for supporting our local business! Your review means everything to our team.'}
+      </div>
+
+      <!-- Reusable QR Powered by ReviewHub Footer -->
+      <div class="counter-footer">
+        <span>Powered by</span>
+        <a href="/" target="_blank">ReviewHub</a>
+        <span>· Reusable Counter Stand</span>
+      </div>
+    </div>
+
+    <!-- Inactive or Replaced Business State -->
+    <div class="counter-card" id="inactiveBizCard" style={business && !business.is_active ? 'display: block;' : 'display: none;'}>
+      <div style="padding: 2.5rem 1rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🏷️</div>
+        <h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;">
+          Counter Stand Temporarily Unavailable
+        </h2>
+        <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem;">
+          This business card is currently paused or undergoing updates by the administrator. 
+          The physical QR code remains valid and will automatically reconnect once updated.
+        </p>
+        <a href="/" class="btn btn-secondary btn-sm">
+          Return to ReviewHub Home
+        </a>
+      </div>
+    </div>
+
+    <!-- Not Found State -->
+    <div class="counter-card" id="notFoundCard" style="display: none;">
+      <div style="padding: 2.5rem 1rem;">
+        <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+        <h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;">
+          Business Slug Not Found
+        </h2>
+        <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem;">
+          No active counter configuration was found for <code id="missingSlugCode" style="color: #818cf8;"></code>. 
+          If you are the administrator, configure this slug in the Admin Portal.
+        </p>
+        <a href="/admin" class="btn btn-primary btn-sm">
+          Open Admin Portal
+        </a>
+      </div>
+    </div>
+
+  </div>
+</Layout>
+
+<script>
+  import { DatabaseService } from '../lib/supabase';
+  import type { Business, EventType } from '../types';
+
+  const wrapper = document.getElementById('counterPageWrapper');
+  const pathSlug = (window.location.pathname.replace(/^\/|\/$/g, '') || wrapper?.dataset.slug || '').toLowerCase();
+
+  // Elements
+  const activeCard = document.getElementById('activeBizCard');
+  const inactiveCard = document.getElementById('inactiveBizCard');
+  const notFoundCard = document.getElementById('notFoundCard');
+  const missingSlugCode = document.getElementById('missingSlugCode');
+
+  const bizLogoImg = document.getElementById('bizLogoImg') as HTMLImageElement;
+  const bizTitle = document.getElementById('bizTitle');
+  const bizTagline = document.getElementById('bizTagline');
+  const customMessage = document.getElementById('customMessage');
+
+  const googleCtaBtn = document.getElementById('googleCtaBtn') as HTMLAnchorElement;
+  const whatsappCtaBtn = document.getElementById('whatsappCtaBtn') as HTMLAnchorElement;
+  const phoneBtn = document.getElementById('phoneBtn') as HTMLAnchorElement;
+  const waGridBtn = document.getElementById('waGridBtn') as HTMLAnchorElement;
+  const instagramBtn = document.getElementById('instagramBtn') as HTMLAnchorElement;
+  const facebookBtn = document.getElementById('facebookBtn') as HTMLAnchorElement;
+  const starsRow = document.getElementById('starsRow');
+
+  let currentBusiness: Business | null = null;
+
+  async function resolveBusiness() {
+    // Resolve the latest configuration from Supabase.
+    let biz: Business | null = null;
+    try {
+      biz = await DatabaseService.getBusinessBySlug(pathSlug);
+    } catch (error) {
+      console.error('Unable to load business from Supabase:', error);
+    }
+
+    if (!biz) {
+      if (activeCard) activeCard.style.display = 'none';
+      if (inactiveCard) inactiveCard.style.display = 'none';
+      if (notFoundCard) notFoundCard.style.display = 'block';
+      if (missingSlugCode) missingSlugCode.textContent = `/${pathSlug}`;
+      return;
+    }
+
+    currentBusiness = biz;
+
+    // Check active status
+    if (!biz.is_active) {
+      if (activeCard) activeCard.style.display = 'none';
+      if (notFoundCard) notFoundCard.style.display = 'none';
+      if (inactiveCard) inactiveCard.style.display = 'block';
+      return;
+    }
+
+    // Apply branding
+    document.title = `${biz.name} | Rate us on Google`;
+    document.documentElement.style.setProperty('--brand', biz.brand_color || '#2563eb');
+    document.documentElement.style.setProperty('--brand-glow', `${biz.brand_color || '#2563eb'}40`);
+
+    if (bizLogoImg && biz.logo_url) {
+      bizLogoImg.src = biz.logo_url;
+      bizLogoImg.alt = biz.name;
+    }
+    if (bizTitle) bizTitle.textContent = biz.name;
+    if (bizTagline) bizTagline.textContent = biz.tagline || 'Specialty Local Service';
+
+    // Message
+    if (customMessage && biz.custom_message) {
+      customMessage.textContent = biz.custom_message;
+    }
+
+    // Google review link
+    if (googleCtaBtn) {
+      googleCtaBtn.href = biz.google_review_url || '#';
+    }
+
+    // WhatsApp
+    const waUrl = biz.whatsapp_number
+      ? `https://wa.me/${biz.whatsapp_number.replace(/\D/g, '')}${
+          biz.whatsapp_message ? `?text=${encodeURIComponent(biz.whatsapp_message)}` : ''
+        }`
+      : '#';
+
+    if (whatsappCtaBtn) {
+      if (biz.whatsapp_number) {
+        whatsappCtaBtn.href = waUrl;
+        whatsappCtaBtn.style.display = 'flex';
+      } else {
+        whatsappCtaBtn.style.display = 'none';
+      }
+    }
+
+    // Grid Buttons
+    if (phoneBtn) {
+      if (biz.phone_number) {
+        phoneBtn.href = `tel:${biz.phone_number.replace(/\s+/g, '')}`;
+        phoneBtn.style.display = 'flex';
+      } else {
+        phoneBtn.style.display = 'none';
+      }
+    }
+
+    if (waGridBtn) {
+      if (biz.whatsapp_number) {
+        waGridBtn.href = waUrl;
+        waGridBtn.style.display = 'flex';
+      } else {
+        waGridBtn.style.display = 'none';
+      }
+    }
+
+    if (instagramBtn) {
+      if (biz.instagram_url) {
+        instagramBtn.href = biz.instagram_url;
+        instagramBtn.style.display = 'flex';
+      } else {
+        instagramBtn.style.display = 'none';
+      }
+    }
+
+    if (facebookBtn) {
+      if (biz.facebook_url) {
+        facebookBtn.href = biz.facebook_url;
+        facebookBtn.style.display = 'flex';
+      } else {
+        facebookBtn.style.display = 'none';
+      }
+    }
+
+    // Track initial page_view event anonymously
+    track('page_view');
+  }
+
+  // Analytics logging helper
+  function track(eventType: EventType) {
+    if (!currentBusiness) return;
+    void DatabaseService.trackEvent({
+      business_id: currentBusiness.id,
+      slug: currentBusiness.slug,
+      event_type: eventType,
+    }).catch((error) => console.warn('Supabase analytics error:', error));
+  }
+
+  // Event Listeners for Clicks
+  googleCtaBtn?.addEventListener('click', () => {
+    track('google_review_click');
+  });
+
+  whatsappCtaBtn?.addEventListener('click', () => {
+    track('whatsapp_click');
+  });
+
+  waGridBtn?.addEventListener('click', () => {
+    track('whatsapp_click');
+  });
+
+  phoneBtn?.addEventListener('click', () => {
+    track('call_click');
+  });
+
+  instagramBtn?.addEventListener('click', () => {
+    track('instagram_click');
+  });
+
+  facebookBtn?.addEventListener('click', () => {
+    track('facebook_click');
+  });
+
+  // Interactive 5-Star Rating Buttons
+  starsRow?.addEventListener('click', (e) => {
+    const target = (e.target as HTMLElement).closest('.star-btn');
+    if (!target) return;
+    const rating = target.getAttribute('data-rating');
+
+    // Trigger joyful animation / burst
+    target.animate([
+      { transform: 'scale(1)' },
+      { transform: 'scale(1.4) rotate(15deg)' },
+      { transform: 'scale(1)' }
+    ], { duration: 350 });
+
+    track('google_review_click');
+
+    // Open Google Review link in new tab
+    if (currentBusiness?.google_review_url) {
+      setTimeout(() => {
+        window.open(currentBusiness!.google_review_url, '_blank', 'noopener,noreferrer');
+      }, 250);
+    }
+  });
+
+  // Initialize on load
+  resolveBusiness();
+</script>
