@@ -6,10 +6,20 @@ export type EventType =
   | 'instagram_click'
   | 'facebook_click';
 
+export interface ShortLink {
+  code: string;
+  business_id: string | null;
+  last_label?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Business {
   id: string;
   name: string;
   slug: string;
+  /** Permanent QR shortener code. Never changes when the business slug is replaced. */
+  short_code?: string;
   logo_url?: string;
   brand_color: string;
   tagline?: string;

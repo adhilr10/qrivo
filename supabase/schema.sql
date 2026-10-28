@@ -39,6 +39,23 @@ ALTER TABLE public.businesses
 CREATE INDEX IF NOT EXISTS idx_businesses_slug ON public.businesses (slug);
 CREATE INDEX IF NOT EXISTS idx_businesses_active ON public.businesses (is_active);
 
+-- 1b. Permanent QR shortener. Printed /s/{code} URLs never change; business_id can be reassigned.
+CREATE TABLE IF NOT EXISTS public.short_links (
+    code VARCHAR(12) PRIMARY KEY,
+    business_id UUID REFERENCES public.businesses(id) ON DELETE SET NULL,
+    last_label TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_short_links_business_id
+    ON public.short_links (business_id)
+    WHERE business_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_short_links_unassigned
+    ON public.short_links (updated_at DESC)
+    WHERE business_id IS NULL;
+
 -- 2. Analytics Events Table
 CREATE TABLE IF NOT EXISTS public.analytics_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -60,6 +77,7 @@ CREATE INDEX IF NOT EXISTS idx_analytics_created_at ON public.analytics_events (
 -- 3. Row Level Security (RLS)
 ALTER TABLE public.businesses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.short_links ENABLE ROW LEVEL SECURITY;
 
 -- Drop old policies if recreating
 DROP POLICY IF EXISTS "Public can view active businesses" ON public.businesses;
@@ -87,6 +105,30 @@ CREATE POLICY "Admins manage businesses"
 -- Allow service role full access
 CREATE POLICY "Service role full access on businesses"
     ON public.businesses
+    FOR ALL
+    TO service_role
+    USING (true)
+    WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public can resolve short links" ON public.short_links;
+DROP POLICY IF EXISTS "Admins manage short links" ON public.short_links;
+DROP POLICY IF EXISTS "Service role full access on short links" ON public.short_links;
+
+CREATE POLICY "Public can resolve short links"
+    ON public.short_links
+    FOR SELECT
+    TO anon, authenticated
+    USING (true);
+
+CREATE POLICY "Admins manage short links"
+    ON public.short_links
+    FOR ALL
+    TO authenticated
+    USING (true)
+    WITH CHECK (true);
+
+CREATE POLICY "Service role full access on short links"
+    ON public.short_links
     FOR ALL
     TO service_role
     USING (true)

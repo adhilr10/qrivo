@@ -76,7 +76,7 @@ import Icon from '../../components/Icon.astro';
           </div>
 
           <div style="font-size: 0.875rem; color: var(--text-muted);">
-            💡 <em>Tip: Physical counter QR codes never need reprinting when you reassign destination links.</em>
+            💡 <em>Tip: The printed /s/ short link never changes. Reassign it after a business is rejected — no QR reprint.</em>
           </div>
         </div>
 
@@ -188,8 +188,8 @@ import Icon from '../../components/Icon.astro';
               Dynamic QR Code Studio
             </h2>
             <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.5rem;">
-              Generate high-resolution PNG & SVG QR codes for physical counter stands. 
-              The encoded URL links to the slug landing page, keeping the physical print 100% reusable!
+              Generate high-resolution PNG & SVG QR codes for physical counter stands.
+              The matrix always encodes the permanent short link (<code>/s/xxxxxx</code>), so rejecting a business and assigning a new slug never breaks printed cards.
             </p>
 
             <div class="form-group" style="margin-bottom: 1.25rem;">
@@ -207,7 +207,7 @@ import Icon from '../../components/Icon.astro';
                   <Icon name="copy" size={16} />
                 </button>
               </div>
-              <span class="form-helper">This is the persistent URL encoded inside the QR matrix.</span>
+              <span class="form-helper">This shortener URL is encoded in the QR matrix and stays the same even if the business page slug changes.</span>
             </div>
 
             <div class="form-group" style="margin-bottom: 1.5rem;">
@@ -303,13 +303,31 @@ import Icon from '../../components/Icon.astro';
                 />
               </div>
               <span class="form-helper">
-                This forms the permanent counter URL. Example: <code>https://yourdomain.com/bella-italia</code>
+                Pretty landing URL (can change). Printed QR codes use the shortener below, not this slug.
+              </span>
+            </div>
+
+            <div class="form-group" id="shortLinkCreateGroup">
+              <label class="form-label" for="formReuseShortCode">QR shortener link</label>
+              <select id="formReuseShortCode" class="form-select">
+                <option value="">Generate a new permanent short link</option>
+              </select>
+              <span class="form-helper">
+                Choose an unused printed QR code after a business is rejected, or generate a new one.
+              </span>
+            </div>
+
+            <div class="form-group" id="shortLinkEditGroup" style="display: none;">
+              <label class="form-label">Permanent QR shortener (never changes)</label>
+              <input type="text" id="formShortLinkDisplay" class="form-input" readonly />
+              <span class="form-helper">
+                This is the URL encoded in the physical QR. You can change the slug above without reprinting.
               </span>
             </div>
 
             <!-- Reassign Slug Warning Banner -->
             <div id="reassignSlugNotice" style="display: none; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 8px; padding: 0.75rem; font-size: 0.8125rem; color: #fde68a;">
-              ♻️ <strong>Reassigning Slug:</strong> Updating links under an existing slug preserves all existing printed counter QR codes without requiring reprinting!
+              ♻️ <strong>Printed QR stays valid:</strong> Keep the shortener link. Changing the business slug or destinations does not require a reprint.
             </div>
 
             <div class="form-grid">
@@ -535,9 +553,18 @@ CREATE TABLE IF NOT EXISTS public.analytics_events (
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS public.short_links (
+    code VARCHAR(12) PRIMARY KEY,
+    business_id UUID REFERENCES public.businesses(id) ON DELETE SET NULL,
+    last_label TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
 -- RLS Policies
 ALTER TABLE public.businesses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.short_links ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Public can view businesses by slug" ON public.businesses FOR SELECT TO anon, authenticated USING (true);
 CREATE POLICY "Admins manage businesses" ON public.businesses FOR ALL TO authenticated
@@ -545,6 +572,8 @@ CREATE POLICY "Admins manage businesses" ON public.businesses FOR ALL TO authent
   WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
 CREATE POLICY "Public can log analytics" ON public.analytics_events FOR INSERT WITH CHECK (true);
 CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Public can resolve short links" ON public.short_links FOR SELECT TO anon, authenticated USING (true);
+CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authenticated USING (true) WITH CHECK (true);
           </textarea>
 
           <div style="margin-top: 1.25rem; padding: 1rem; background: #111827; border-radius: var(--radius-md); border: 1px solid var(--border-subtle);">
@@ -596,7 +625,7 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
         </div>
 
         <div style="font-size: 0.75rem; color: #6b7280; font-family: monospace;" id="printCardUrl">
-          https://reviewhub.example.com/slug
+          https://reviewhub.example.com/s/xxxxxx
         </div>
 
         <div style="margin-top: 1.5rem; font-size: 0.75rem; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 0.75rem;">
@@ -800,13 +829,20 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
 
 <script>
   import { DatabaseService, getSupabaseConfig, supabase } from '../../lib/supabase';
+  import { qrDestinationUrl, shortLinkUrl } from '../../lib/short-links';
   import { QRCode } from '../../utils/qrcode';
-  import type { Business, AnalyticsSummary } from '../../types';
+  import type { Business, AnalyticsSummary, ShortLink } from '../../types';
 
   // State
   let businesses: Business[] = [];
+  let unassignedShortLinks: ShortLink[] = [];
   let selectedBizForQr: Business | null = null;
   let activeTabName = 'businessesTab';
+  const RESERVED_SLUGS = new Set(['s', 'admin', 'login', '404']);
+
+  function qrUrlFor(biz: Business): string {
+    return qrDestinationUrl(window.location.origin, biz.short_code, biz.slug);
+  }
 
   function getSupabaseErrorMessage(error: unknown): string {
     if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
@@ -855,6 +891,10 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
   const formIsActive = document.getElementById('formIsActive') as HTMLInputElement;
   const reassignSlugNotice = document.getElementById('reassignSlugNotice');
   const slugAvailabilityBadge = document.getElementById('slugAvailabilityBadge');
+  const formReuseShortCode = document.getElementById('formReuseShortCode') as HTMLSelectElement;
+  const formShortLinkDisplay = document.getElementById('formShortLinkDisplay') as HTMLInputElement;
+  const shortLinkCreateGroup = document.getElementById('shortLinkCreateGroup');
+  const shortLinkEditGroup = document.getElementById('shortLinkEditGroup');
 
   // Phone preview elements
   const prevImg = document.getElementById('prevImg') as HTMLImageElement;
@@ -930,6 +970,13 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
 
     try {
       businesses = await DatabaseService.getBusinesses();
+      businesses = await DatabaseService.ensureShortLinks(businesses);
+      try {
+        unassignedShortLinks = await DatabaseService.getUnassignedShortLinks();
+      } catch (shortLinkError) {
+        console.warn('Unable to load unassigned short links:', shortLinkError);
+        unassignedShortLinks = [];
+      }
     } catch (error) {
       console.error('Unable to load businesses from Supabase:', error);
       if (backendStatusPill && backendStatusText) {
@@ -952,7 +999,10 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
     if (!businessListContainer) return;
     const query = filter.toLowerCase().trim();
     const filtered = businesses.filter(
-      (b) => b.name.toLowerCase().includes(query) || b.slug.toLowerCase().includes(query)
+      (b) =>
+        b.name.toLowerCase().includes(query) ||
+        b.slug.toLowerCase().includes(query) ||
+        (b.short_code || '').toLowerCase().includes(query)
     );
 
     if (filtered.length === 0) {
@@ -968,7 +1018,8 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
 
     businessListContainer.innerHTML = filtered
       .map((b) => {
-        const fullUrl = `${window.location.origin}/${b.slug}`;
+        const fullUrl = qrUrlFor(b);
+        const shortPath = b.short_code ? `/s/${b.short_code}` : `/${b.slug}`;
         return `
           <div class="biz-card-item" style="--card-brand: ${b.brand_color};">
             <div>
@@ -983,9 +1034,12 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
                     <h3 style="font-size: 1.0625rem; font-weight: 700; color: #ffffff; line-height: 1.2;">
                       ${b.name}
                     </h3>
-                    <div style="display: flex; align-items: center; gap: 0.4rem; margin-top: 0.2rem;">
-                      <a href="/${b.slug}" target="_blank" style="font-size: 0.75rem; color: #818cf8; font-family: monospace;" title="Open counter page">
-                        /${b.slug} ↗
+                    <div style="display: flex; flex-direction: column; gap: 0.15rem; margin-top: 0.2rem;">
+                      <a href="${shortPath}" target="_blank" style="font-size: 0.75rem; color: #34d399; font-family: monospace;" title="Permanent QR short link">
+                        ${shortPath} ↗
+                      </a>
+                      <a href="/${b.slug}" target="_blank" style="font-size: 0.7rem; color: #818cf8; font-family: monospace;" title="Current business landing page">
+                        /${b.slug}
                       </a>
                     </div>
                   </div>
@@ -1012,8 +1066,8 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
 
             <!-- Footer actions -->
             <div style="display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border-subtle); padding-top: 0.875rem; gap: 0.5rem;">
-              <button class="btn btn-outline btn-sm copy-slug-btn" data-url="${fullUrl}" title="Copy QR Counter URL">
-                <span>📋 Copy Link</span>
+              <button class="btn btn-outline btn-sm copy-slug-btn" data-url="${fullUrl}" title="Copy permanent QR short link">
+                <span>📋 Copy QR Link</span>
               </button>
 
               <div style="display: flex; gap: 0.35rem;">
@@ -1084,7 +1138,7 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
         const name = target.dataset.name;
         if (!id) return;
         const confirmDelete = window.confirm(
-          `Are you sure you want to delete "${name}"?\nThis business and its counter landing page will be removed.`
+          `Reject and remove "${name}"?\n\nThe printed QR short link will stay available so you can assign it to a new business. You will not need to reprint the counter card.`
         );
         if (confirmDelete) {
           try {
@@ -1155,6 +1209,19 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
     formCustomMsg.value = 'Thank you for visiting! Your Google review helps our local team grow.';
     formIsActive.checked = true;
     if (reassignSlugNotice) reassignSlugNotice.style.display = 'none';
+    if (shortLinkCreateGroup) shortLinkCreateGroup.style.display = 'block';
+    if (shortLinkEditGroup) shortLinkEditGroup.style.display = 'none';
+    if (formShortLinkDisplay) formShortLinkDisplay.value = '';
+    if (formReuseShortCode) {
+      formReuseShortCode.innerHTML = [
+        '<option value="">Generate a new permanent short link</option>',
+        ...unassignedShortLinks.map(
+          (link) =>
+            `<option value="${link.code}">Reuse /s/${link.code}${link.last_label ? ` — was ${link.last_label}` : ''}</option>`
+        ),
+      ].join('');
+      formReuseShortCode.value = '';
+    }
 
     syncPhonePreview();
     bizModal.style.display = 'flex';
@@ -1178,6 +1245,14 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
     formFb.value = biz.facebook_url || '';
     formCustomMsg.value = biz.custom_message || '';
     formIsActive.checked = biz.is_active;
+
+    if (shortLinkCreateGroup) shortLinkCreateGroup.style.display = 'none';
+    if (shortLinkEditGroup) shortLinkEditGroup.style.display = 'block';
+    if (formShortLinkDisplay) {
+      formShortLinkDisplay.value = biz.short_code
+        ? shortLinkUrl(window.location.origin, biz.short_code)
+        : 'Short link will be created on save';
+    }
 
     // Show reassign notification banner
     if (reassignSlugNotice) reassignSlugNotice.style.display = 'block';
@@ -1278,11 +1353,16 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
       alert('Please provide both Business Name and URL Slug.');
       return;
     }
+    if (RESERVED_SLUGS.has(slug)) {
+      alert(`The slug "${slug}" is reserved. Please choose a different counter URL.`);
+      return;
+    }
 
     const payload: Partial<Business> & { name: string; slug: string } = {
       id,
       name,
       slug,
+      short_code: id ? undefined : formReuseShortCode?.value || undefined,
       logo_url: formLogoUrl.value.trim(),
       brand_color: formBrandColor.value,
       tagline: formTagline.value.trim(),
@@ -1312,7 +1392,7 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
   function populateQrStudio() {
     if (!qrBizSelect) return;
     qrBizSelect.innerHTML = businesses
-      .map((b) => `<option value="${b.id}">${b.name} (/${b.slug})</option>`)
+      .map((b) => `<option value="${b.id}">${b.name} (${b.short_code ? `/s/${b.short_code}` : `/${b.slug}`})</option>`)
       .join('');
 
     if (businesses.length > 0) {
@@ -1329,17 +1409,17 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
 
   function updateQrStudio(biz: Business) {
     selectedBizForQr = biz;
-    const fullUrl = `${window.location.origin}/${biz.slug}`;
+    const fullUrl = qrUrlFor(biz);
     if (qrEncodedUrlInput) qrEncodedUrlInput.value = fullUrl;
     if (qrPreviewBizName) qrPreviewBizName.textContent = biz.name;
-    if (qrPreviewTagline) qrPreviewTagline.textContent = `/${biz.slug}`;
+    if (qrPreviewTagline) qrPreviewTagline.textContent = biz.short_code ? `/s/${biz.short_code}` : `/${biz.slug}`;
 
     renderQrCode();
   }
 
   function renderQrCode() {
     if (!selectedBizForQr || !qrPreviewContainer) return;
-    const fullUrl = `${window.location.origin}/${selectedBizForQr.slug}`;
+    const fullUrl = qrUrlFor(selectedBizForQr);
     const color = qrColorPicker?.value || '#000000';
 
     const qr = new QRCode(fullUrl);
@@ -1390,7 +1470,7 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
   downloadPngBtn?.addEventListener('click', () => {
     if (!selectedBizForQr || !qrExportCanvas) return;
     const link = document.createElement('a');
-    link.download = `reviewhub-qr-${selectedBizForQr.slug}.png`;
+    link.download = `reviewhub-qr-${selectedBizForQr.short_code || selectedBizForQr.slug}.png`;
     link.href = qrExportCanvas.toDataURL('image/png');
     link.click();
   });
@@ -1398,14 +1478,14 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
   // Download SVG
   downloadSvgBtn?.addEventListener('click', () => {
     if (!selectedBizForQr) return;
-    const fullUrl = `${window.location.origin}/${selectedBizForQr.slug}`;
+    const fullUrl = qrUrlFor(selectedBizForQr);
     const color = qrColorPicker?.value || '#000000';
     const qr = new QRCode(fullUrl);
     const svg = qr.toSVG({ color, bgColor: '#ffffff', margin: 2, size: 512 });
 
     const blob = new Blob([svg], { type: 'image/svg+xml' });
     const link = document.createElement('a');
-    link.download = `reviewhub-qr-${selectedBizForQr.slug}.svg`;
+    link.download = `reviewhub-qr-${selectedBizForQr.short_code || selectedBizForQr.slug}.svg`;
     link.href = URL.createObjectURL(blob);
     link.click();
   });
@@ -1413,7 +1493,7 @@ CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT 
   // Open 1-Click Printable Counter Tent Stand
   openPrintCardBtn?.addEventListener('click', () => {
     if (!selectedBizForQr) return;
-    const fullUrl = `${window.location.origin}/${selectedBizForQr.slug}`;
+    const fullUrl = qrUrlFor(selectedBizForQr);
     const qr = new QRCode(fullUrl);
     const qrSvg = qr.toSVG({ color: '#000000', bgColor: '#ffffff', margin: 2, size: 260 });
 

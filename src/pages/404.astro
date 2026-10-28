@@ -176,9 +176,12 @@ import Icon from '../components/Icon.astro';
 
 <script>
   import { DatabaseService } from '../lib/supabase';
+  import { DEMO_BUSINESSES } from '../lib/demo-businesses';
+  import { parseShortCodeFromPath } from '../lib/short-links';
   import type { Business, EventType } from '../types';
 
   const rawPath = window.location.pathname.replace(/^\/|\/$/g, '').toLowerCase();
+  const shortCode = parseShortCodeFromPath(window.location.pathname);
 
   const resolvingCard = document.getElementById('resolvingCard');
   const activeCard = document.getElementById('activeBizCard');
@@ -216,9 +219,17 @@ import Icon from '../components/Icon.astro';
 
     let biz: Business | null = null;
     try {
-      biz = await DatabaseService.getBusinessBySlug(rawPath);
+      if (shortCode) {
+        biz = await DatabaseService.getBusinessByShortCode(shortCode);
+      } else {
+        biz = await DatabaseService.getBusinessBySlug(rawPath);
+      }
     } catch (e) {
       console.warn('Error resolving slug from Supabase:', e);
+    }
+
+    if (!biz && shortCode) {
+      biz = DEMO_BUSINESSES.find((item) => item.short_code === shortCode) || null;
     }
 
     if (!biz) {

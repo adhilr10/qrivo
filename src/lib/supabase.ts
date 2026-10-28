@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
-import type { AnalyticsEvent, AnalyticsSummary, Business, EventType } from '../types';
+import { generateShortCode } from './short-links';
+import type { AnalyticsEvent, AnalyticsSummary, Business, EventType, ShortLink } from '../types';
 
 export interface SupabaseConfig {
   url: string;
@@ -44,6 +45,18 @@ async function requireAuthenticatedUserId(): Promise<string> {
   return data.user.id;
 }
 
+type BusinessRow = Business & { short_links?: { code: string } | { code: string }[] | null };
+
+function attachShortCode(row: BusinessRow | null): Business | null {
+  if (!row) return null;
+  const linked = Array.isArray(row.short_links) ? row.short_links[0] : row.short_links;
+  const { short_links: _links, ...business } = row;
+  return {
+    ...business,
+    short_code: linked?.code || business.short_code,
+  };
+}
+
 function toSummary(businessId: string, slug: string, events: AnalyticsEvent[]): AnalyticsSummary {
   const count = (eventType: EventType) => events.filter((event) => event.event_type === eventType).length;
   const page_views = count('page_view');
@@ -76,24 +89,147 @@ export const DatabaseService = {
   },
 
   async getBusinesses(): Promise<Business[]> {
-    const { data, error } = await requireSupabase()
+    const database = requireSupabase();
+    let { data, error } = await database
       .from('businesses')
-      .select('*')
+      .select('*, short_links(code)')
       .order('created_at', { ascending: false });
 
+    if (error && /short_links/i.test(error.message)) {
+      const fallback = await database.from('businesses').select('*').order('created_at', { ascending: false });
+      if (fallback.error) throw fallback.error;
+      return (fallback.data ?? []) as Business[];
+    }
+
     if (error) throw error;
-    return (data ?? []) as Business[];
+    return ((data ?? []) as BusinessRow[]).map((row) => attachShortCode(row) as Business);
   },
 
   async getBusinessBySlug(slug: string): Promise<Business | null> {
-    const { data, error } = await requireSupabase()
+    const database = requireSupabase();
+    let { data, error } = await database
       .from('businesses')
-      .select('*')
+      .select('*, short_links(code)')
       .eq('slug', slug.toLowerCase())
       .maybeSingle();
 
+    if (error && /short_links/i.test(error.message)) {
+      const fallback = await database.from('businesses').select('*').eq('slug', slug.toLowerCase()).maybeSingle();
+      if (fallback.error) throw fallback.error;
+      return (fallback.data as Business | null) ?? null;
+    }
+
     if (error) throw error;
-    return (data as Business | null) ?? null;
+    return attachShortCode(data as BusinessRow | null);
+  },
+
+  async getShortLink(code: string): Promise<(ShortLink & { business: Business | null }) | null> {
+    const { data, error } = await requireSupabase()
+      .from('short_links')
+      .select('*, businesses(*)')
+      .eq('code', code.toLowerCase())
+      .maybeSingle();
+
+    if (error) {
+      if (/short_links/i.test(error.message) || error.code === 'PGRST205') return null;
+      throw error;
+    }
+    if (!data) return null;
+
+    const businessRow = data.businesses as BusinessRow | BusinessRow[] | null;
+    const business = attachShortCode(Array.isArray(businessRow) ? businessRow[0] : businessRow);
+
+    return {
+      code: data.code,
+      business_id: data.business_id,
+      last_label: data.last_label,
+      created_at: data.created_at,
+      updated_at: data.updated_at,
+      business: business ? { ...business, short_code: data.code } : null,
+    };
+  },
+
+  async getBusinessByShortCode(code: string): Promise<Business | null> {
+    const link = await this.getShortLink(code);
+    return link?.business ?? null;
+  },
+
+  async getUnassignedShortLinks(): Promise<ShortLink[]> {
+    const { data, error } = await requireSupabase()
+      .from('short_links')
+      .select('code, business_id, last_label, created_at, updated_at')
+      .is('business_id', null)
+      .order('updated_at', { ascending: false });
+
+    if (error) {
+      if (/short_links/i.test(error.message) || error.code === 'PGRST205') return [];
+      throw error;
+    }
+    return (data ?? []) as ShortLink[];
+  },
+
+  async ensureShortLink(businessId: string, label: string, reuseCode?: string): Promise<string> {
+    const database = requireSupabase();
+    const now = new Date().toISOString();
+
+    const existing = await database
+      .from('short_links')
+      .select('code')
+      .eq('business_id', businessId)
+      .maybeSingle();
+
+    if (existing.data?.code) {
+      await database
+        .from('short_links')
+        .update({ last_label: label, updated_at: now })
+        .eq('code', existing.data.code);
+      return existing.data.code as string;
+    }
+
+    if (reuseCode) {
+      const assigned = await database
+        .from('short_links')
+        .update({ business_id: businessId, last_label: label, updated_at: now })
+        .eq('code', reuseCode.toLowerCase())
+        .is('business_id', null)
+        .select('code')
+        .maybeSingle();
+
+      if (assigned.error) throw assigned.error;
+      if (assigned.data?.code) return assigned.data.code as string;
+    }
+
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const code = generateShortCode();
+      const inserted = await database
+        .from('short_links')
+        .insert({ code, business_id: businessId, last_label: label, updated_at: now })
+        .select('code')
+        .single();
+
+      if (!inserted.error && inserted.data?.code) return inserted.data.code as string;
+      if (inserted.error && !/duplicate|unique/i.test(inserted.error.message)) throw inserted.error;
+    }
+
+    throw new Error('Unable to allocate a unique QR short link.');
+  },
+
+  async ensureShortLinks(businesses: Business[]): Promise<Business[]> {
+    const next: Business[] = [];
+    for (const business of businesses) {
+      if (business.short_code) {
+        next.push(business);
+        continue;
+      }
+      try {
+        const code = await this.ensureShortLink(business.id, business.name);
+        next.push({ ...business, short_code: code });
+      } catch (error) {
+        console.warn('Unable to create short link for business', business.id, error);
+        next.push(business);
+      }
+    }
+    return next;
   },
 
   async saveBusiness(business: Partial<Business> & { name: string; slug: string }): Promise<Business> {
@@ -130,17 +266,52 @@ export const DatabaseService = {
         ? database.from('businesses').update(fallbackValues).eq('id', business.id)
         : database.from('businesses').insert(fallbackValues);
       const fallbackRes = await fallbackQuery.select().single();
-      if (!fallbackRes.error) {
-        return fallbackRes.data as Business;
+      if (!fallbackRes.error && fallbackRes.data) {
+        // Still ensure a short link is created/assigned on the fallback path
+        const fallbackSaved = fallbackRes.data as Business;
+        try {
+          const shortCode = await this.ensureShortLink(
+            fallbackSaved.id,
+            fallbackSaved.name,
+            business.short_code
+          );
+          fallbackSaved.short_code = shortCode;
+        } catch (shortLinkError) {
+          console.warn('Business saved (fallback) but short link could not be created:', shortLinkError);
+        }
+        return fallbackSaved;
       }
     }
 
     if (error) throw error;
-    return data as Business;
+    const saved = data as Business;
+    try {
+      const shortCode = await this.ensureShortLink(
+        saved.id,
+        saved.name,
+        business.short_code
+      );
+      saved.short_code = shortCode;
+    } catch (shortLinkError) {
+      console.warn('Business saved but short link could not be created:', shortLinkError);
+    }
+    return saved;
   },
 
   async deleteBusiness(id: string): Promise<boolean> {
-    const { error } = await requireSupabase().from('businesses').delete().eq('id', id);
+    const database = requireSupabase();
+    const existing = await database.from('short_links').select('code, last_label').eq('business_id', id).maybeSingle();
+    if (existing.data?.code) {
+      await database
+        .from('short_links')
+        .update({
+          last_label: existing.data.last_label || 'Unassigned QR',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('code', existing.data.code);
+    }
+
+    const { error } = await database.from('businesses').delete().eq('id', id);
     if (error) throw error;
     return true;
   },

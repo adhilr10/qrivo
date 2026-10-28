@@ -1,0 +1,92 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { DEMO_BUSINESSES } from '../../lib/demo-businesses';
+import { DatabaseService } from '../../lib/supabase';
+
+export const prerender = false;
+
+const code = (Astro.params.code || '').toLowerCase().trim();
+
+// ── 1. Validate the code format ───────────────────────────────────────────
+if (!code || !/^[a-z0-9]{4,12}$/.test(code)) {
+  return Astro.redirect('/404', 302);
+}
+
+// ── 2. Server-side resolution (authoritative) ────────────────────────────
+let assignedSlug: string | null = null;
+let linkExists = false;
+let lastLabel = '';
+
+try {
+  if (DatabaseService.isConfigured()) {
+    const link = await DatabaseService.getShortLink(code);
+    if (link) {
+      linkExists = true;
+      lastLabel = link.last_label || '';
+      if (link.business?.slug) {
+        assignedSlug = link.business.slug;
+      }
+    }
+  }
+} catch (error) {
+  console.warn('[/s/[code]] Supabase lookup failed:', error);
+}
+
+// ── 3. Fallback to demo businesses ───────────────────────────────────────
+if (!assignedSlug) {
+  const demo = DEMO_BUSINESSES.find((b) => b.short_code === code);
+  if (demo) {
+    assignedSlug = demo.slug;
+    linkExists = true;
+    lastLabel = demo.name;
+  }
+}
+
+// ── 4. Redirect immediately if resolved ──────────────────────────────────
+if (assignedSlug) {
+  return Astro.redirect(`/${assignedSlug}`, 302);
+}
+
+// ── 5. Not resolved: render informational page (no JS redirect fallback) ─
+//    The server is authoritative. If it can't resolve, no client-side
+//    guess will be more reliable — it would use the same API.
+---
+
+<Layout title="ReviewHub — Short Link" hideNav={true}>
+  <div class="counter-page-wrapper">
+    <div class="counter-card">
+      <div style="padding: 3rem 1.5rem; text-align: center; max-width: 420px; margin: 0 auto;">
+
+        <div style="font-size: 3.5rem; margin-bottom: 1.25rem; line-height: 1;">
+          {linkExists ? '🏷️' : '🔍'}
+        </div>
+
+        <h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 0.75rem; color: #ffffff; line-height: 1.3;">
+          {linkExists
+            ? 'QR Stand — Waiting for a New Business'
+            : 'Short Link Not Found'}
+        </h2>
+
+        <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 0.5rem;">
+          {linkExists
+            ? `This physical QR card (${code})${lastLabel ? ` — last used by "${lastLabel}" —` : ''} is permanently valid. Assign it to a new business in the Admin Portal and the printed stand starts working immediately.`
+            : `No shortener record exists for /s/${code}. Check the Admin Portal to create or assign this code.`}
+        </p>
+
+        {linkExists && (
+          <p style="font-size: 0.8rem; color: #6366f1; margin-bottom: 1.75rem; font-weight: 500;">
+            ♻️ No reprint needed — just reassign in Admin.
+          </p>
+        )}
+
+        <a href="/admin" class="btn btn-primary btn-sm" style="margin-top: 0.5rem;">
+          Open Admin Portal
+        </a>
+
+        <div style="margin-top: 2rem; padding-top: 1.25rem; border-top: 1px solid var(--border-subtle);">
+          <code style="font-size: 0.75rem; color: var(--text-dim);">/s/{code}</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</Layout>

@@ -6,7 +6,16 @@ import type { Business } from '../types';
  */
 export const DEMO_BUSINESSES: Business[] = [
   {
-    id: 'demo-artisan-cafe', name: 'Artisan Roasters & Cafe', slug: 'artisan-cafe',
+    id: 'demo-review-hub', name: 'ReviewHub', slug: 'review-hub', short_code: 'rhdemo',
+    logo_url: '/review-hub-logo.svg', brand_color: '#6366f1',
+    tagline: 'Smart QR Counter Cards for Google Reviews & Instant Connections', google_review_url: 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4',
+    whatsapp_number: '+15550192834', whatsapp_message: 'Hi ReviewHub! I would like to get smart QR counter cards for my business.', phone_number: '+15550192834',
+    instagram_url: 'https://instagram.com/reviewhubapp', facebook_url: 'https://facebook.com/reviewhubapp',
+    custom_message: 'Turn counter scans into 5-star Google reviews in seconds. Update destinations anytime without reprinting physical QR stands!',
+    is_active: true, created_at: '2026-01-01T00:00:00.000Z',
+  },
+  {
+    id: 'demo-artisan-cafe', name: 'Artisan Roasters & Cafe', slug: 'artisan-cafe', short_code: 'acdemo',
     logo_url: 'https://images.unsplash.com/photo-1501339847302-ac426a4a7cbb?w=200&auto=format&fit=crop&q=80', brand_color: '#d97706',
     tagline: 'Specialty Coffee, Fresh Bakes & Cozy Vibes', google_review_url: 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4',
     whatsapp_number: '+15550192834', whatsapp_message: 'Hello Artisan Cafe! I have a question about today’s specials.', phone_number: '+15550192834',
@@ -15,7 +24,7 @@ export const DEMO_BUSINESSES: Business[] = [
     is_active: true, created_at: '2026-01-01T00:00:00.000Z',
   },
   {
-    id: 'demo-downtown-smiles', name: 'Downtown Smiles Dental Clinic', slug: 'downtown-smiles',
+    id: 'demo-downtown-smiles', name: 'Downtown Smiles Dental Clinic', slug: 'downtown-smiles', short_code: 'dsdemo',
     logo_url: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?w=200&auto=format&fit=crop&q=80', brand_color: '#0284c7',
     tagline: 'Gentle, modern dentistry for the entire family', google_review_url: 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4',
     whatsapp_number: '+15550149201', whatsapp_message: 'Hi Downtown Smiles! I’d like to inquire about booking an appointment.', phone_number: '+15550149201',
@@ -24,7 +33,7 @@ export const DEMO_BUSINESSES: Business[] = [
     is_active: true, created_at: '2026-01-01T00:00:00.000Z',
   },
   {
-    id: 'demo-apex-auto', name: 'Apex Auto & Performance', slug: 'apex-auto',
+    id: 'demo-apex-auto', name: 'Apex Auto & Performance', slug: 'apex-auto', short_code: 'aademo',
     logo_url: 'https://images.unsplash.com/photo-1486006920555-c77dce18193b?w=200&auto=format&fit=crop&q=80', brand_color: '#dc2626',
     tagline: 'Certified European & Domestic Auto Repair', google_review_url: 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4',
     whatsapp_number: '+15550183721', whatsapp_message: 'Hi Apex Auto, I want to follow up on my vehicle service.', phone_number: '+15550183721',

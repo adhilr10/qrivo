@@ -12,14 +12,16 @@ A business places a QR code stand or sticker at its counter. When a customer sca
 
 ## 💡 The Core Innovation: Permanent, Reusable Counter QR Codes
 
-A physical QR code printed on acrylic stands or counter cards **must not point directly to Google**. It points to a dynamic business-specific landing page:
+A physical QR code printed on acrylic stands or counter cards **must not point directly to Google**. It encodes a permanent short link:
 ```
-https://reviewhub.example.com/[slug]
+https://reviewhub.example.com/s/[code]
 ```
+
+That shortener always stays the same. It redirects to the current business landing page (`/[slug]`), which can change if a business is rejected and replaced.
 
 ### Why this matters:
 * **Zero Reprinting Costs**: If the business changes owners, updates its phone number, switches WhatsApp lines, or replaces its Google Place ID, the admin simply edits the destination links in the Admin Portal. The printed QR code on the counter continues working seamlessly!
-* **Slug Reassignment**: If a business rejects or cancels the service, the administrator can assign the same physical slug and counter stand to another business immediately, or deactivate it with one click.
+* **Reject without reprinting**: If a business rejects or cancels, delete it in Admin. The `/s/[code]` short link stays unassigned. Create the next business and reuse that short link — the physical QR stand keeps working.
 * **Anonymous Conversion Tracking**: Physical cards cannot track impressions. ReviewHub tracks every page view, Google review tap, WhatsApp inquiry, and call click in real time.
 
 ---
