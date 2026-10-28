@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS public.businesses (
     custom_message TEXT DEFAULT 'Thank you for your visit! Your review helps our local team grow.',
     is_active BOOLEAN DEFAULT true NOT NULL,
     user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    owner_email TEXT DEFAULT '',
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -33,7 +34,8 @@ CREATE TABLE IF NOT EXISTS public.businesses (
 ALTER TABLE public.businesses
     ADD COLUMN IF NOT EXISTS whatsapp_message TEXT DEFAULT 'Hi! I visited your business and would like to connect.',
     ADD COLUMN IF NOT EXISTS custom_message TEXT DEFAULT 'Thank you for your visit! Your review helps our local team grow.',
-    ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+    ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    ADD COLUMN IF NOT EXISTS owner_email TEXT DEFAULT '';
 
 -- Index for fast lookup by slug (Counter QR landing page query)
 CREATE INDEX IF NOT EXISTS idx_businesses_slug ON public.businesses (slug);

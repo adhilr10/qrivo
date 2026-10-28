@@ -34,6 +34,8 @@ export interface Business {
   created_at: string;
   updated_at?: string;
   user_id?: string;
+  /** Email of the admin who created this business. Stored at creation time. */
+  owner_email?: string;
 }
 
 export interface AnalyticsEvent {

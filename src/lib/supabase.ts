@@ -45,6 +45,13 @@ async function requireAuthenticatedUserId(): Promise<string> {
   return data.user.id;
 }
 
+async function getAuthenticatedUser(): Promise<{ id: string; email: string }> {
+  const { data, error } = await requireSupabase().auth.getUser();
+  if (error) throw error;
+  if (!data.user) throw new Error('You must sign in to manage businesses.');
+  return { id: data.user.id, email: data.user.email || '' };
+}
+
 type BusinessRow = Business & { short_links?: { code: string } | { code: string }[] | null };
 
 function attachShortCode(row: BusinessRow | null): Business | null {
@@ -234,8 +241,9 @@ export const DatabaseService = {
 
   async saveBusiness(business: Partial<Business> & { name: string; slug: string }): Promise<Business> {
     const database = requireSupabase();
-    const userId = await requireAuthenticatedUserId();
-    const values = {
+    const { id: userId, email: userEmail } = await getAuthenticatedUser();
+    const isNew = !business.id;
+    const values: Record<string, unknown> = {
       name: business.name.trim(),
       slug: business.slug.trim().toLowerCase(),
       logo_url: business.logo_url || '',
@@ -252,6 +260,10 @@ export const DatabaseService = {
       user_id: userId,
       updated_at: new Date().toISOString(),
     };
+    // Capture the creator's email only when creating a new business
+    if (isNew && userEmail) {
+      values.owner_email = userEmail;
+    }
 
     const query = business.id
       ? database.from('businesses').update(values).eq('id', business.id)
