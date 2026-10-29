@@ -53,7 +53,7 @@ import Icon from '../../components/Icon.astro';
         </button>
         <button class="tab-btn" data-tab="qrStudioTab">
           <Icon name="qrcode" size={17} />
-          <span>QR Studio</span>
+          <span>QR Codes</span>
         </button>
       </div>
     </div>
@@ -143,8 +143,55 @@ import Icon from '../../components/Icon.astro';
         </div>
       </div>
 
-      <!-- ── TAB 3: QR STUDIO ──────────────────────────────────────────── -->
+      <!-- ── TAB 3: QR CODES (STOCK + STUDIO) ──────────────────────────── -->
       <div id="qrStudioTab" class="tab-content" style="display:none;">
+
+        <!-- Bulk blank stock: print first, assign to a business later -->
+        <div class="glass-card qr-stock-panel">
+          <div class="qr-stock-head">
+            <div class="qr-stock-heading">
+              <h2 class="section-title" style="margin-bottom:.15rem;">Bulk QR Stands — Blank Stock</h2>
+              <p class="section-desc" style="margin-bottom:0;">
+                Print QR codes before a business signs up. Each code is permanent, so a stand can be
+                reassigned when a shop says no — no reprint.
+              </p>
+            </div>
+            <span class="qr-stock-badge" id="qrStockCountBadge">0 in stock</span>
+          </div>
+
+          <div class="qr-bulk-row">
+            <div class="form-group">
+              <label class="form-label" for="qrBulkCount">How many codes?</label>
+              <input type="number" id="qrBulkCount" class="form-input" min="1" max="200" step="1" value="10" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="qrBulkLabel">Batch label (optional)</label>
+              <input type="text" id="qrBulkLabel" class="form-input" placeholder="e.g. October batch A" />
+            </div>
+            <button type="button" id="qrBulkCreateBtn" class="btn btn-primary qr-bulk-submit">
+              <Icon name="plus" size={16} />
+              <span>Create QR codes</span>
+            </button>
+          </div>
+
+          <div id="qrBulkResult" class="qr-bulk-result" hidden></div>
+
+          <div class="qr-stock-toolbar">
+            <span class="qr-stock-toolbar-label">Unassigned stands</span>
+            <div class="qr-stock-toolbar-actions">
+              <button type="button" id="qrStockDownloadAllBtn" class="btn btn-secondary btn-sm">
+                <Icon name="download" size={14} />
+                <span>Download all (ZIP)</span>
+              </button>
+              <button type="button" id="qrStockRefreshBtn" class="btn btn-outline btn-sm">Refresh</button>
+            </div>
+          </div>
+
+          <div id="qrStockList" class="qr-stock-list">
+            <div class="qr-stock-empty">Loading QR stock…</div>
+          </div>
+        </div>
+
         <div class="qr-studio-grid">
 
           <!-- Left panel -->
@@ -223,7 +270,7 @@ import Icon from '../../components/Icon.astro';
       </button>
       <button class="mobile-tab-btn" data-tab="qrStudioTab">
         <span class="mobile-tab-icon">⬛</span>
-        <span class="mobile-tab-label">QR Studio</span>
+        <span class="mobile-tab-label">QR Codes</span>
       </button>
       <button class="mobile-tab-btn" id="mobileAddBizBtn">
         <span class="mobile-tab-icon">➕</span>
@@ -263,18 +310,16 @@ import Icon from '../../components/Icon.astro';
               <span class="form-helper">Printed QR codes use the shortener link below, not this slug.</span>
             </div>
 
-            <div class="form-group" id="shortLinkCreateGroup">
-              <label class="form-label" for="formReuseShortCode">QR Shortener Link</label>
-              <select id="formReuseShortCode" class="form-select">
-                <option value="">Auto-generate a new permanent code</option>
-              </select>
-              <span class="form-helper">Reuse a printed QR stand from a rejected business, or generate a fresh one.</span>
-            </div>
-
-            <div class="form-group" id="shortLinkEditGroup" style="display:none;">
-              <label class="form-label">Permanent QR Shortener (never changes)</label>
-              <input type="text" id="formShortLinkDisplay" class="form-input" readonly />
-              <span class="form-helper">Changing the slug above never breaks the physical QR stand.</span>
+            <div class="form-group" id="qrAssignGroup">
+              <label class="form-label" for="formQrCode">
+                <span>Counter QR Stand</span>
+                <button type="button" id="openQrScanBtn" class="gl-label-btn">📷 Scan QR</button>
+              </label>
+              <select id="formQrCode" class="form-select"></select>
+              <span class="form-helper" id="formQrHelper">
+                Pick a blank QR from stock, or leave empty and assign one later from QR Codes.
+              </span>
+              <div id="formQrBanner" class="qr-form-banner" hidden></div>
             </div>
 
             <div id="reassignSlugNotice" class="notice-banner" style="display:none;">
@@ -288,9 +333,9 @@ import Icon from '../../components/Icon.astro';
               </div>
               <div class="form-group">
                 <label class="form-label" for="formBrandColor">Brand Color</label>
-                <div style="display:flex;align-items:center;gap:.5rem;">
+                <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
                   <input type="color" id="formBrandColor" value="#2563eb" class="color-input" />
-                  <input type="text" id="formBrandColorText" class="form-input" value="#2563eb" style="width:100px;" />
+                  <input type="text" id="formBrandColorText" class="form-input" value="#2563eb" style="width:100px;flex:0 1 100px;" />
                   <div style="display:flex;gap:4px;">
                     <button type="button" class="color-preset-dot" data-color="#2563eb" style="background:#2563eb;"></button>
                     <button type="button" class="color-preset-dot" data-color="#d97706" style="background:#d97706;"></button>
@@ -482,6 +527,75 @@ import Icon from '../../components/Icon.astro';
             placeholder="Paste the review link here…"
           />
           <button type="button" id="glUsePasteBtn" class="btn btn-primary">Use link</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         MODAL: QR SCANNER
+         Reads the printed stand's /s/<code> link and assigns that exact
+         permanent code to the business being created or edited.
+         ====================================================================== -->
+    <div id="qrScanModal" class="modal-backdrop" style="display:none;">
+      <div class="modal-dialog qr-scan-dialog">
+        <div class="modal-header">
+          <h2 class="modal-title">📷 Scan QR Stand</h2>
+          <button type="button" id="closeQrScanBtn" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="qr-scan-body">
+          <p class="qr-scan-help">
+            Point the camera at the QR printed on the counter stand. The permanent
+            <code>/s/…</code> code is read from the link, so the same physical card can be
+            reassigned any time.
+          </p>
+
+          <div class="qr-scan-video-wrap">
+            <video id="qrScanVideo" playsinline muted></video>
+            <div class="qr-scan-frame" aria-hidden="true"></div>
+          </div>
+
+          <div id="qrScanStatus" class="qr-scan-status">Camera is off.</div>
+
+          <div id="qrScanResult" class="qr-scan-result" hidden></div>
+
+          <div class="qr-scan-manual">
+            <input
+              type="text"
+              id="qrScanManualInput"
+              class="form-input"
+              placeholder="Or type the code — /s/abc123"
+              autocomplete="off"
+            />
+            <button type="button" id="qrScanManualBtn" class="btn btn-secondary btn-sm">Check code</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         MODAL: ASSIGN A STOCK QR TO A BUSINESS
+         ====================================================================== -->
+    <div id="assignQrModal" class="modal-backdrop" style="display:none;">
+      <div class="modal-dialog assign-dialog">
+        <div class="modal-header">
+          <h2 class="modal-title">Assign QR to a business</h2>
+          <button type="button" id="closeAssignQrBtn" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="assign-body">
+          <div id="assignQrPreview" class="assign-qr-preview"></div>
+
+          <div class="form-group">
+            <label class="form-label" for="assignBizSelect">Business</label>
+            <select id="assignBizSelect" class="form-select"></select>
+            <span class="form-helper">Businesses without a QR are listed first. Assigning moves the stand.</span>
+          </div>
+
+          <div class="assign-actions">
+            <button type="button" id="cancelAssignQrBtn" class="btn btn-secondary">Cancel</button>
+            <button type="button" id="confirmAssignQrBtn" class="btn btn-primary">Assign QR</button>
+          </div>
         </div>
       </div>
     </div>
@@ -884,6 +998,383 @@ CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authe
   cursor: pointer;
   padding: 0;
   box-shadow: 2px 2px 0 #0a0a0a;
+}
+
+/* ── Bulk QR stock ───────────────────────────────────────────────────────── */
+.qr-stock-panel {
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  background: #ffffff;
+  border: 2.5px solid #0a0a0a;
+  border-radius: 8px;
+  box-shadow: 4px 4px 0 #0a0a0a;
+}
+
+.qr-stock-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.qr-stock-heading { flex: 1; min-width: 220px; }
+
+.qr-stock-badge {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #0a0a0a;
+  background: #fff8e7;
+  border: 2px solid #0a0a0a;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  box-shadow: 2px 2px 0 #0a0a0a;
+  white-space: nowrap;
+}
+
+.qr-bulk-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.875rem;
+  background: #fffdf5;
+  border: 2px solid #0a0a0a;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
+.qr-bulk-row .form-group {
+  flex: 1 1 160px;
+  margin-bottom: 0;
+}
+
+.qr-bulk-submit { flex-shrink: 0; }
+
+.qr-stock-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.qr-stock-toolbar-actions {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.qr-stock-batch {
+  border: 2px solid #0a0a0a;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 3px 3px 0 #0a0a0a;
+}
+
+.qr-stock-batch-head {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.45rem 0.65rem;
+  background: #fff8e7;
+  border-bottom: 2px solid #0a0a0a;
+}
+
+.qr-stock-batch-name {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #0a0a0a;
+  word-break: break-word;
+}
+
+.qr-stock-batch-count {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #4a4a4a;
+  background: #ffffff;
+  border: 1.5px solid #0a0a0a;
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+}
+
+.qr-stock-batch-download {
+  margin-left: auto;
+  font-size: 0.7rem;
+  padding: 0.25rem 0.6rem;
+}
+
+.qr-stock-batch .qr-stock-item {
+  border: 0;
+  border-bottom: 1.5px solid #e5e1d8;
+  border-radius: 0;
+  box-shadow: none;
+  background: #ffffff;
+}
+
+.qr-stock-batch .qr-stock-item:last-child {
+  border-bottom: 0;
+}
+
+.qr-bulk-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  padding: 0.65rem 0.8rem;
+  margin-bottom: 1rem;
+  background: #f0fdf4;
+  border: 2px solid #15803d;
+  border-radius: 6px;
+  box-shadow: 2px 2px 0 #0a0a0a;
+}
+
+.qr-bulk-result-text {
+  flex: 1;
+  min-width: 200px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #14532d;
+}
+
+.qr-stock-toolbar-label {
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #4a4a4a;
+}
+
+.qr-stock-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.qr-stock-empty {
+  text-align: center;
+  padding: 1.5rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #767676;
+  background: #fffdf5;
+  border: 2px dashed #c9c4b8;
+  border-radius: 6px;
+}
+
+.qr-stock-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  padding: 0.6rem 0.75rem;
+  background: #ffffff;
+  border: 2px solid #0a0a0a;
+  border-radius: 6px;
+  box-shadow: 2px 2px 0 #0a0a0a;
+}
+
+.qr-stock-code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #15803d;
+  white-space: nowrap;
+}
+
+.qr-stock-meta {
+  flex: 1;
+  min-width: 120px;
+  font-size: 0.7rem;
+  color: #767676;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qr-stock-actions {
+  display: flex;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-left: auto;
+}
+
+.qr-stock-actions .btn {
+  font-size: 0.7rem;
+  padding: 0.3rem 0.55rem;
+}
+
+/* QR chooser inside the business form */
+.qr-form-banner {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #0a0a0a;
+  background: #fff8e7;
+  border: 2px solid #0a0a0a;
+  border-radius: 6px;
+}
+
+.qr-form-banner.is-warn {
+  color: #92400e;
+  background: #fef3c7;
+  border-color: #b45309;
+}
+
+.qr-form-banner.is-ok {
+  color: #15803d;
+  background: #f0fdf4;
+  border-color: #15803d;
+}
+
+/* ── QR scanner modal ────────────────────────────────────────────────────── */
+.qr-scan-dialog {
+  max-width: 520px;
+}
+
+.qr-scan-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  padding: 1.25rem;
+}
+
+.qr-scan-help {
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #4a4a4a;
+  font-weight: 500;
+}
+
+.qr-scan-video-wrap {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: #0a0a0a;
+  border: 2.5px solid #0a0a0a;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 4px 4px 0 #0a0a0a;
+}
+
+.qr-scan-video-wrap video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.qr-scan-frame {
+  position: absolute;
+  inset: 18%;
+  border: 3px dashed rgba(245, 197, 24, 0.9);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.qr-scan-status {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #4a4a4a;
+  text-align: center;
+}
+
+.qr-scan-result {
+  padding: 0.75rem;
+  background: #fffdf5;
+  border: 2px solid #0a0a0a;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: #0a0a0a;
+  box-shadow: 3px 3px 0 #0a0a0a;
+}
+
+.qr-scan-result .qr-scan-result-code {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #15803d;
+  margin-bottom: 0.15rem;
+  word-break: break-all;
+}
+
+.qr-scan-result .qr-scan-result-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+}
+
+.qr-scan-manual {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.qr-scan-manual .form-input { flex: 1; min-width: 0; }
+
+/* ── Assign stock QR modal ───────────────────────────────────────────────── */
+.assign-dialog { max-width: 520px; }
+
+.assign-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.assign-qr-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #fffdf5;
+  border: 2px solid #0a0a0a;
+  border-radius: 6px;
+  box-shadow: 3px 3px 0 #0a0a0a;
+}
+
+.assign-qr-preview canvas,
+.assign-qr-preview svg {
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+  background: #fff;
+}
+
+.assign-qr-preview .assign-qr-text {
+  min-width: 0;
+  font-size: 0.8rem;
+  color: #4a4a4a;
+  line-height: 1.45;
+}
+
+.assign-qr-preview .assign-qr-code {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #15803d;
+  margin-bottom: 0.2rem;
+  word-break: break-all;
+}
+
+.assign-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 /* ── Mobile bottom tab bar ───────────────────────────────────────────────── */
@@ -1454,6 +1945,56 @@ input:checked + .slider:before { transform: translateX(22px); }
   .mobile-bottom-bar { display: flex !important; }
   .hide-xs { display: none; }
   .admin-user-email { display: none; }
+  .tab-container { padding-top: 1rem; }
+  .admin-header { padding: 0.6rem 0; }
+  .admin-header-top { gap: 0.5rem; }
+  .admin-header-title { font-size: 1rem; }
+  .admin-header-actions {
+    width: 100%;
+    gap: 0.4rem;
+  }
+  .admin-header-actions .btn {
+    flex: 1;
+    padding: 0.45rem 0.5rem;
+    font-size: 0.7rem;
+  }
+  .search-bar-row { gap: 0.5rem; }
+  .search-input-wrap {
+    flex: 1 1 100%;
+    max-width: none;
+    min-width: 0;
+  }
+  .business-list-grid { gap: 0.85rem; }
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  .stat-card { padding: 0.9rem; }
+  .stat-card-value { font-size: 1.6rem; }
+  .table-card { padding: 0.875rem; }
+  .section-title { font-size: 1rem; }
+  .analytics-table { min-width: 430px; }
+  .qr-panel,
+  .qr-preview-panel { padding: 1rem; }
+  .qr-preview-frame {
+    padding: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+  .qr-preview-inner { min-width: 0; }
+  .modal-header { padding: 0.75rem 1rem; }
+  .modal-title { font-size: 1rem; }
+  .modal-body-split {
+    padding: 1rem;
+    gap: 1rem;
+    max-height: calc(92vh - 58px);
+  }
+  .form-input,
+  .form-select,
+  .form-textarea { min-width: 0; }
+  .form-actions { gap: 0.5rem; }
+  .form-actions .btn { flex: 1; }
+  .active-toggle-row { gap: 0.75rem; }
   .modal-backdrop {
     padding: 0;
     align-items: flex-end;
@@ -1484,6 +2025,34 @@ input:checked + .slider:before { transform: translateX(22px); }
     flex-wrap: wrap;
   }
   .gl-footer .btn { width: 100%; }
+  .qr-stock-panel { padding: 1rem; }
+  .qr-bulk-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .qr-bulk-submit { width: 100%; }
+  .qr-stock-item { align-items: flex-start; }
+  .qr-stock-actions {
+    width: 100%;
+    margin-left: 0;
+  }
+  .qr-stock-actions .btn { flex: 1; }
+  .qr-stock-toolbar-actions { width: 100%; }
+  .qr-stock-toolbar-actions .btn { flex: 1; }
+  .qr-stock-batch-head { gap: 0.35rem; }
+  .qr-stock-batch-download { width: 100%; margin-left: 0; }
+  .qr-scan-manual { flex-direction: column; }
+  .qr-scan-manual .btn { width: 100%; }
+  .assign-actions .btn { flex: 1; }
+}
+
+@media (max-width: 479px) {
+  .admin-header { top: 52px; }
+  .modal-title { font-size: 0.95rem; }
+  .form-actions .btn {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
 }
 
 @media (min-width: 640px) and (max-width: 899px) {
@@ -1575,6 +2144,18 @@ input:checked + .slider:before { transform: translateX(22px); }
   overflow: hidden;
   text-overflow: ellipsis;
   display: block;
+}
+
+.biz-card-no-qr {
+  font-size: 0.68rem;
+  color: #b45309;
+  font-weight: 700;
+  display: inline-block;
+  background: #fef3c7;
+  border: 1.5px solid #b45309;
+  border-radius: 4px;
+  padding: 0.05rem 0.35rem;
+  line-height: 1.5;
 }
 
 .biz-card-status {
@@ -1743,13 +2324,19 @@ input:checked + .slider:before { transform: translateX(22px); }
   import { DatabaseService, getSupabaseConfig, supabase } from '../../lib/supabase';
   import { qrDestinationUrl, shortLinkUrl } from '../../lib/short-links';
   import * as QRCodeLib from 'qrcode';
+  import QrScanner from 'qr-scanner';
+  import JSZip from 'jszip';
   import type { Business, AnalyticsSummary, ShortLink } from '../../types';
 
   // ── State ──────────────────────────────────────────────────────────────
   let businesses: Business[] = [];
   let unassignedShortLinks: ShortLink[] = [];
+  let stockGroups: Array<{ label: string; links: ShortLink[] }> = [];
   let selectedBizForQr: Business | null = null;
   let activeTabName = 'businessesTab';
+  let qrScanner: QrScanner | null = null;
+  let scanBusy = false;
+  let pendingAssignCode = '';
   const RESERVED_SLUGS = new Set(['s', 'admin', 'login', '404']);
 
   const DEFAULT_LOGO_URL = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop&q=80';
@@ -1838,10 +2425,33 @@ input:checked + .slider:before { transform: translateX(22px); }
   const formCustomMsg      = document.getElementById('formCustomMsg') as HTMLTextAreaElement;
   const formIsActive       = document.getElementById('formIsActive') as HTMLInputElement;
   const reassignSlugNotice = document.getElementById('reassignSlugNotice');
-  const formReuseShortCode = document.getElementById('formReuseShortCode') as HTMLSelectElement;
-  const formShortLinkDisplay = document.getElementById('formShortLinkDisplay') as HTMLInputElement;
-  const shortLinkCreateGroup = document.getElementById('shortLinkCreateGroup');
-  const shortLinkEditGroup   = document.getElementById('shortLinkEditGroup');
+  const formQrCode         = document.getElementById('formQrCode') as HTMLSelectElement;
+  const formQrBanner       = document.getElementById('formQrBanner');
+  const openQrScanBtn      = document.getElementById('openQrScanBtn');
+
+  const qrStockCountBadge  = document.getElementById('qrStockCountBadge');
+  const qrStockList        = document.getElementById('qrStockList');
+  const qrBulkCount        = document.getElementById('qrBulkCount') as HTMLInputElement;
+  const qrBulkLabel        = document.getElementById('qrBulkLabel') as HTMLInputElement;
+  const qrBulkCreateBtn    = document.getElementById('qrBulkCreateBtn') as HTMLButtonElement;
+  const qrBulkResult       = document.getElementById('qrBulkResult');
+  const qrStockRefreshBtn  = document.getElementById('qrStockRefreshBtn');
+  const qrStockDownloadAllBtn = document.getElementById('qrStockDownloadAllBtn') as HTMLButtonElement | null;
+
+  const qrScanModal        = document.getElementById('qrScanModal');
+  const closeQrScanBtn     = document.getElementById('closeQrScanBtn');
+  const qrScanVideo        = document.getElementById('qrScanVideo') as HTMLVideoElement;
+  const qrScanStatus       = document.getElementById('qrScanStatus');
+  const qrScanResult       = document.getElementById('qrScanResult');
+  const qrScanManualInput  = document.getElementById('qrScanManualInput') as HTMLInputElement;
+  const qrScanManualBtn    = document.getElementById('qrScanManualBtn');
+
+  const assignQrModal      = document.getElementById('assignQrModal');
+  const closeAssignQrBtn   = document.getElementById('closeAssignQrBtn');
+  const cancelAssignQrBtn  = document.getElementById('cancelAssignQrBtn');
+  const confirmAssignQrBtn = document.getElementById('confirmAssignQrBtn');
+  const assignQrPreview    = document.getElementById('assignQrPreview');
+  const assignBizSelect    = document.getElementById('assignBizSelect') as HTMLSelectElement;
 
   const googleLinkModal    = document.getElementById('googleLinkModal');
   const openGoogleLinkBtn  = document.getElementById('openGoogleLinkBtn');
@@ -1922,7 +2532,8 @@ input:checked + .slider:before { transform: translateX(22px); }
 
     try {
       businesses = await DatabaseService.getBusinesses();
-      businesses = await DatabaseService.ensureShortLinks(businesses);
+      // QR codes are created in bulk and assigned later; never auto-create one
+      // behind the admin's back, or a stand gets printed that nobody ordered.
       try {
         unassignedShortLinks = await DatabaseService.getUnassignedShortLinks();
       } catch { unassignedShortLinks = []; }
@@ -1943,6 +2554,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     if (mobileBizBadge) mobileBizBadge.textContent = count;
 
     renderBusinessesList();
+    renderQrStock();
     populateQrStudio();
     if (activeTabName === 'analyticsTab') renderAnalytics();
   }
@@ -1976,12 +2588,15 @@ input:checked + .slider:before { transform: translateX(22px); }
 
     businessListContainer.innerHTML = filtered.map(b => {
       const fullUrl    = qrUrlFor(b);
-      const shortPath  = b.short_code ? `/s/${b.short_code}` : `/${b.slug}`;
+      const shortPath  = b.short_code ? `/s/${b.short_code}` : '';
       const ownerEmail = b.owner_email || '';
       const initial    = ownerInitial(ownerEmail);
       const created    = b.created_at
         ? new Date(b.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
         : '';
+      const qrMeta = shortPath
+        ? `<a href="${shortPath}" target="_blank" class="biz-card-short-link" title="Permanent QR link">${shortPath} ↗</a>`
+        : `<span class="biz-card-no-qr">No QR assigned</span>`;
 
       return `
         <div class="biz-card-item" style="--card-brand:${b.brand_color};">
@@ -1996,7 +2611,7 @@ input:checked + .slider:before { transform: translateX(22px); }
               />
               <div class="biz-card-meta">
                 <div class="biz-card-name" title="${b.name}">${b.name}</div>
-                <a href="${shortPath}" target="_blank" class="biz-card-short-link" title="Permanent QR link">${shortPath} ↗</a>
+                ${qrMeta}
               </div>
               <span class="status-pill ${b.is_active ? 'online' : 'local'} biz-card-status">
                 ${b.is_active ? 'Active' : 'Paused'}
@@ -2016,11 +2631,16 @@ input:checked + .slider:before { transform: translateX(22px); }
 
           <!-- Footer -->
           <div class="biz-card-footer">
-            <button class="btn btn-outline btn-sm copy-slug-btn" data-url="${fullUrl}" title="Copy QR short link">
+            <button
+              class="btn btn-outline btn-sm copy-slug-btn"
+              data-url="${fullUrl}"
+              title="Copy QR short link"
+              ${shortPath ? '' : 'disabled'}
+            >
               📋 Copy QR
             </button>
             <div class="biz-card-action-group">
-              <button class="btn btn-outline btn-sm open-qr-btn" data-id="${b.id}" title="QR Studio">QR</button>
+              <button class="btn btn-outline btn-sm open-qr-btn" data-id="${b.id}" title="QR Studio" ${shortPath ? '' : 'disabled'}>QR</button>
               <button class="btn btn-secondary btn-sm edit-biz-btn" data-id="${b.id}" title="Edit">Edit</button>
               <button class="btn btn-danger btn-sm delete-biz-btn" data-id="${b.id}" data-name="${b.name}" title="Delete">✕</button>
             </div>
@@ -2133,18 +2753,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     formCustomMsg.value = 'Thank you for visiting! Your Google review helps our local team grow.';
     formIsActive.checked = true;
     if (reassignSlugNotice)  reassignSlugNotice.style.display  = 'none';
-    if (shortLinkCreateGroup) shortLinkCreateGroup.style.display = 'block';
-    if (shortLinkEditGroup)   shortLinkEditGroup.style.display   = 'none';
-    if (formShortLinkDisplay) formShortLinkDisplay.value = '';
-    if (formReuseShortCode) {
-      formReuseShortCode.innerHTML = [
-        '<option value="">Auto-generate a new permanent code</option>',
-        ...unassignedShortLinks.map(link =>
-          `<option value="${link.code}">Reuse /s/${link.code}${link.last_label ? ` — was ${link.last_label}` : ''}</option>`
-        ),
-      ].join('');
-      formReuseShortCode.value = '';
-    }
+    fillQrSelect('');
     syncPhonePreview();
     bizModal.style.display = 'flex';
   }
@@ -2168,17 +2777,76 @@ input:checked + .slider:before { transform: translateX(22px); }
     formCustomMsg.value      = biz.custom_message || '';
     formIsActive.checked     = biz.is_active;
 
-    if (shortLinkCreateGroup)  shortLinkCreateGroup.style.display  = 'none';
-    if (shortLinkEditGroup)    shortLinkEditGroup.style.display    = 'block';
-    if (formShortLinkDisplay) {
-      formShortLinkDisplay.value = biz.short_code
-        ? shortLinkUrl(window.location.origin, biz.short_code)
-        : 'Short link will be created on save';
-    }
+    fillQrSelect(biz.short_code || '');
     if (reassignSlugNotice) reassignSlugNotice.style.display = 'block';
 
     syncPhonePreview();
     bizModal.style.display = 'flex';
+  }
+
+  // ── QR chooser in the business form ─────────────────────────────────────
+  function fillQrSelect(currentCode: string) {
+    if (!formQrCode) return;
+    const options: string[] = [];
+
+    options.push(
+      currentCode
+        ? '<option value="">— Remove QR from this business —</option>'
+        : '<option value="">— No QR yet (assign later) —</option>',
+    );
+
+    if (currentCode) {
+      options.push(`<option value="${currentCode}">/s/${currentCode} — currently on this business</option>`);
+    }
+
+    const stock = unassignedShortLinks.filter(link => link.code !== currentCode);
+    if (stock.length > 0) {
+      options.push(`<optgroup label="Unassigned QR stock (${stock.length})">`);
+      for (const link of stock) {
+        const label = link.last_label ? `was ${link.last_label}` : 'blank stand';
+        options.push(`<option value="${link.code}">/s/${link.code} — ${label}</option>`);
+      }
+      options.push('</optgroup>');
+    }
+
+    formQrCode.innerHTML = options.join('');
+    formQrCode.value = currentCode;
+    updateQrFormBanner();
+  }
+
+  function updateQrFormBanner() {
+    if (!formQrBanner || !formQrCode) return;
+    const code = formQrCode.value;
+    const editing = Boolean(formBizId.value);
+
+    formQrBanner.className = 'qr-form-banner';
+
+    if (code) {
+      formQrBanner.hidden = false;
+      formQrBanner.classList.add('is-ok');
+      formQrBanner.innerHTML =
+        `This business will use <strong>/s/${code}</strong> — the printed stand works as soon as you save.`;
+      return;
+    }
+
+    if (editing) {
+      formQrBanner.hidden = false;
+      formQrBanner.classList.add('is-warn');
+      formQrBanner.innerHTML =
+        'Saving now releases the printed stand back to stock. The business will have no QR until you assign one.';
+      return;
+    }
+
+    if (unassignedShortLinks.length === 0) {
+      formQrBanner.hidden = false;
+      formQrBanner.classList.add('is-warn');
+      formQrBanner.innerHTML =
+        'No blank QR stock yet. Create codes in <strong>QR Codes → Bulk QR Stands</strong>, then assign one here.';
+      return;
+    }
+
+    formQrBanner.hidden = true;
+    formQrBanner.innerHTML = '';
   }
 
   function closeModal() { if (bizModal) bizModal.style.display = 'none'; }
@@ -2245,7 +2913,9 @@ input:checked + .slider:before { transform: translateX(22px); }
 
     const payload: Partial<Business> & { name: string; slug: string } = {
       id, name, slug,
-      short_code:       id ? undefined : formReuseShortCode?.value || undefined,
+      // Always send the choice: a code assigns the printed stand, an empty
+      // string releases it, so nothing is auto-generated behind the scenes.
+      short_code:       formQrCode?.value || '',
       logo_url:         formLogoUrl.value.trim() || DEFAULT_LOGO_URL,
       brand_color:      formBrandColor.value,
       tagline:          formTagline.value.trim(),
@@ -2259,25 +2929,48 @@ input:checked + .slider:before { transform: translateX(22px); }
       is_active:        formIsActive.checked,
     };
 
+    const submitBtn = document.getElementById('saveBizSubmitBtn') as HTMLButtonElement | null;
+    if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving…'; }
+
     try {
-      await DatabaseService.saveBusiness(payload);
+      const saved = await DatabaseService.saveBusiness(payload);
       closeModal();
       await loadData();
+      if (saved.short_link_error) {
+        alert(`Business saved, but its QR could not be linked.\n\n${saved.short_link_error}`);
+      }
     } catch (error) {
       alert(`Unable to save.\n\n${getSupabaseErrorMessage(error)}`);
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>Save Business</span>';
+      }
     }
   });
+
+  formQrCode?.addEventListener('change', updateQrFormBanner);
 
   // ── QR Studio ───────────────────────────────────────────────────────────
   function populateQrStudio() {
     if (!qrBizSelect) return;
-    qrBizSelect.innerHTML = businesses
-      .map(b => `<option value="${b.id}">${b.name} (${b.short_code ? `/s/${b.short_code}` : `/${b.slug}`})</option>`)
-      .join('');
-    if (businesses.length > 0) {
-      const b = businesses.find(x => x.id === qrBizSelect.value) || businesses[0];
-      updateQrStudio(b);
+    // Only businesses that own a printed stand can be rendered here; otherwise
+    // the QR would encode a slug page that may not exist until the next build.
+    const withQr = businesses.filter(b => b.short_code);
+    if (withQr.length === 0) {
+      qrBizSelect.innerHTML = '<option value="">No QR assigned yet</option>';
+      selectedBizForQr = null;
+      if (qrEncodedUrlInput) qrEncodedUrlInput.value = '';
+      if (qrPreviewContainer) qrPreviewContainer.innerHTML = '';
+      if (qrPreviewBizName) qrPreviewBizName.textContent = 'No QR assigned';
+      if (qrPreviewTagline) qrPreviewTagline.textContent = 'Create blank QR stock, then assign one to a business';
+      return;
     }
+    qrBizSelect.innerHTML = withQr
+      .map(b => `<option value="${b.id}">${b.name} (/s/${b.short_code})</option>`)
+      .join('');
+    const b = withQr.find(x => x.id === qrBizSelect.value) || withQr[0];
+    updateQrStudio(b);
   }
 
   qrBizSelect?.addEventListener('change', () => {
@@ -2397,6 +3090,487 @@ input:checked + .slider:before { transform: translateX(22px); }
       window.print();
     } catch (err) {
       alert('Failed to generate print QR: ' + String(err));
+    }
+  });
+
+  // ── Bulk QR stock ───────────────────────────────────────────────────────
+  function stockLinkUrl(code: string): string {
+    return shortLinkUrl(window.location.origin, code);
+  }
+
+  function renderQrStock() {
+    if (!qrStockList) return;
+    const count = unassignedShortLinks.length;
+    if (qrStockCountBadge) qrStockCountBadge.textContent = `${count} in stock`;
+
+    if (count === 0) {
+      stockGroups = [];
+      qrStockList.innerHTML =
+        '<div class="qr-stock-empty">No blank QR codes yet. Create a batch above — print them now and assign each one when a business signs up.</div>';
+      return;
+    }
+
+    // Group by the batch label stored on the short link, so a whole print run
+    // can be downloaded again as one ZIP later.
+    const groups = new Map<string, ShortLink[]>();
+    for (const link of unassignedShortLinks) {
+      const key = (link.last_label || '').trim();
+      const bucket = groups.get(key);
+      if (bucket) bucket.push(link);
+      else groups.set(key, [link]);
+    }
+
+    stockGroups = [...groups.entries()]
+      .map(([label, links]) => ({ label, links }))
+      .sort((a, b) => a.label.localeCompare(b.label));
+
+    qrStockList.innerHTML = stockGroups.map((group, groupIndex) => {
+      const batchName = group.label || 'Unlabeled batch';
+      const items = group.links.map(link => {
+        const created = link.created_at
+          ? new Date(link.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+          : '';
+        return `
+          <div class="qr-stock-item">
+            <span class="qr-stock-code">/s/${link.code}</span>
+            <span class="qr-stock-meta">${created || 'blank stand'}</span>
+            <div class="qr-stock-actions">
+              <button type="button" class="btn btn-outline btn-sm" data-stock-act="copy" data-code="${link.code}">Copy</button>
+              <button type="button" class="btn btn-outline btn-sm" data-stock-act="png" data-code="${link.code}">PNG</button>
+              <button type="button" class="btn btn-secondary btn-sm" data-stock-act="assign" data-code="${link.code}">Assign</button>
+            </div>
+          </div>`;
+      }).join('');
+
+      return `
+        <div class="qr-stock-batch">
+          <div class="qr-stock-batch-head">
+            <span class="qr-stock-batch-name">${escapeHtml(batchName)}</span>
+            <span class="qr-stock-batch-count">${group.links.length} ${group.links.length === 1 ? 'code' : 'codes'}</span>
+            <button
+              type="button"
+              class="btn btn-secondary btn-sm qr-stock-batch-download"
+              data-stock-batch="${groupIndex}"
+              title="Download this batch as a ZIP of 1024px PNGs"
+            >⬇ Download ZIP</button>
+          </div>
+          ${items}
+        </div>`;
+    }).join('');
+
+    qrStockList.querySelectorAll<HTMLElement>('[data-stock-act]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const code = btn.dataset.code || '';
+        const act = btn.dataset.stockAct;
+        if (act === 'copy') void copyStockLink(btn, code);
+        else if (act === 'png') void downloadStockPng(code);
+        else if (act === 'assign') void openAssignModal(code);
+      });
+    });
+
+    qrStockList.querySelectorAll<HTMLElement>('[data-stock-batch]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const index = Number(btn.dataset.stockBatch || -1);
+        const group = stockGroups[index];
+        if (!group) return;
+        void downloadQrZip(group.links, group.label, btn);
+      });
+    });
+  }
+
+  function sanitizeFilePart(value: string, fallback: string): string {
+    const cleaned = (value || '')
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 60);
+    return cleaned || fallback;
+  }
+
+  async function downloadQrZip(links: ShortLink[], batchLabel: string, button?: HTMLElement | null) {
+    if (links.length === 0) return;
+
+    const fallback = `batch-${new Date().toISOString().slice(0, 10)}`;
+    const zipName = `reviewhub-qr-${sanitizeFilePart(batchLabel, fallback)}`;
+    const originalHtml = button?.innerHTML;
+    if (button) button.setAttribute('disabled', 'true');
+
+    try {
+      const zip = new JSZip();
+      const folder = zip.folder(zipName);
+      if (!folder) throw new Error('Could not create the ZIP folder.');
+
+      const rows = ['code,url,file'];
+      for (let index = 0; index < links.length; index++) {
+        const code = links[index].code;
+        const url = stockLinkUrl(code);
+        if (button) button.textContent = `Preparing ${index + 1}/${links.length}…`;
+
+        const dataUrl = await QRCodeLib.toDataURL(url, {
+          type: 'image/png',
+          color: { dark: '#000000', light: '#ffffff' },
+          margin: 3,
+          width: 1024,
+          errorCorrectionLevel: 'M',
+        });
+        const base64 = String(dataUrl).split(',')[1] || '';
+        folder.file(`${code}.png`, base64, { base64: true });
+        rows.push(`${code},${url},${code}.png`);
+      }
+
+      folder.file('codes.csv', rows.join('\n'));
+      folder.file(
+        'README.txt',
+        [
+          'ReviewHub QR stands',
+          `Batch: ${batchLabel || 'unlabeled'}`,
+          `Codes: ${links.length}`,
+          '',
+          'Every QR encodes a permanent /s/<code> link.',
+          'Print the PNGs, then assign each code in Admin -> QR Codes.',
+          'If a shop says no, reassign the same stand — no reprint needed.',
+        ].join('\n'),
+      );
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      const href = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = href;
+      a.download = `${zipName}.zip`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(href), 5000);
+    } catch (error) {
+      alert(`Could not build the ZIP.\n\n${String(error)}`);
+    } finally {
+      if (button) {
+        button.removeAttribute('disabled');
+        if (originalHtml) button.innerHTML = originalHtml;
+      }
+    }
+  }
+
+  async function copyStockLink(btn: HTMLElement, code: string) {
+    try {
+      await navigator.clipboard.writeText(stockLinkUrl(code));
+      const original = btn.textContent || 'Copy';
+      btn.textContent = '✓ Copied';
+      setTimeout(() => { btn.textContent = original; }, 1400);
+    } catch {
+      alert(`Copy failed. Link:\n${stockLinkUrl(code)}`);
+    }
+  }
+
+  async function downloadStockPng(code: string) {
+    try {
+      const dataUrl = await QRCodeLib.toDataURL(stockLinkUrl(code), {
+        type: 'image/png',
+        color: { dark: '#000000', light: '#ffffff' },
+        margin: 3,
+        width: 1024,
+        errorCorrectionLevel: 'M',
+      });
+      const a = document.createElement('a');
+      a.download = `reviewhub-qr-${code}.png`;
+      a.href = dataUrl as string;
+      a.click();
+    } catch (err) {
+      alert('Failed to generate PNG: ' + String(err));
+    }
+  }
+
+  async function reloadStock() {
+    try {
+      unassignedShortLinks = await DatabaseService.getUnassignedShortLinks();
+    } catch (error) {
+      console.warn('Unable to refresh QR stock:', error);
+    }
+    renderQrStock();
+  }
+
+  async function createBulkQrCodes() {
+    const count = Number(qrBulkCount?.value || 0);
+    if (!Number.isFinite(count) || count < 1 || count > 200) {
+      alert('Choose between 1 and 200 QR codes.');
+      return;
+    }
+    const label = (qrBulkLabel?.value || '').trim() || defaultBatchLabel();
+    if (qrBulkCreateBtn) { qrBulkCreateBtn.disabled = true; qrBulkCreateBtn.textContent = 'Creating…'; }
+
+    try {
+      const created = await DatabaseService.createShortLinks(count, label);
+      if (qrBulkLabel) qrBulkLabel.value = '';
+      await reloadStock();
+      showBulkResult(label, created);
+    } catch (error) {
+      alert(`Could not create QR codes.\n\n${getSupabaseErrorMessage(error)}`);
+    } finally {
+      if (qrBulkCreateBtn) { qrBulkCreateBtn.disabled = false; qrBulkCreateBtn.textContent = 'Create QR codes'; }
+    }
+  }
+
+  function defaultBatchLabel(): string {
+    const now = new Date();
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `Batch ${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+  }
+
+  function escapeHtml(value: string): string {
+    return (value || '').replace(/[&<>"']/g, char => {
+      const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+      return map[char] || char;
+    });
+  }
+
+  function showBulkResult(label: string, created: ShortLink[]) {
+    if (!qrBulkResult) return;
+    qrBulkResult.hidden = false;
+    qrBulkResult.innerHTML = `
+      <div class="qr-bulk-result-text">
+        ✓ Created <strong>${created.length}</strong> QR ${created.length === 1 ? 'code' : 'codes'} in
+        <strong>${escapeHtml(label)}</strong>.
+        Download the batch as one ZIP, print the stands, then assign each code when a shop signs up.
+      </div>
+      <button type="button" class="btn btn-primary btn-sm" data-bulk-zip>
+        ⬇ Download ${created.length} PNG${created.length === 1 ? '' : 's'} (ZIP)
+      </button>`;
+    qrBulkResult.querySelector('[data-bulk-zip]')?.addEventListener('click', event => {
+      void downloadQrZip(created, label, event.currentTarget as HTMLElement);
+    });
+  }
+
+  qrBulkCreateBtn?.addEventListener('click', () => { void createBulkQrCodes(); });
+  qrStockRefreshBtn?.addEventListener('click', () => { void reloadStock(); });
+  qrStockDownloadAllBtn?.addEventListener('click', () => {
+    const label = `all-stock-${new Date().toISOString().slice(0, 10)}`;
+    void downloadQrZip(unassignedShortLinks, label, qrStockDownloadAllBtn);
+  });
+
+  // ── Assign a stock QR to an existing business ───────────────────────────
+  async function openAssignModal(code: string) {
+    pendingAssignCode = code;
+    if (!assignQrModal) return;
+
+    const withQr = new Set(businesses.filter(b => b.short_code).map(b => b.id));
+    const ordered = [...businesses].sort((a, b) => Number(withQr.has(a.id)) - Number(withQr.has(b.id)));
+
+    if (assignBizSelect) {
+      assignBizSelect.innerHTML = ordered.length
+        ? ordered
+            .map(b => `<option value="${b.id}">${b.name}${b.short_code ? ` — currently /s/${b.short_code}` : ' — no QR yet'}</option>`)
+            .join('')
+        : '<option value="">Add a business first</option>';
+    }
+
+    if (assignQrPreview) {
+      assignQrPreview.innerHTML = `
+        <div class="assign-qr-text">
+          <span class="assign-qr-code">/s/${code}</span>
+          Blank stand — pick the business that should answer this scan.
+        </div>`;
+      try {
+        const svg = await QRCodeLib.toString(stockLinkUrl(code), {
+          type: 'svg',
+          margin: 1,
+          width: 168,
+          color: { dark: '#000000', light: '#ffffff' },
+        });
+        assignQrPreview.insertAdjacentHTML('afterbegin', svg);
+      } catch {
+        // The QR preview is optional; the code is still shown as text.
+      }
+    }
+
+    assignQrModal.style.display = 'flex';
+  }
+
+  function closeAssignModal() {
+    if (assignQrModal) assignQrModal.style.display = 'none';
+    pendingAssignCode = '';
+  }
+
+  async function confirmAssignQr() {
+    const businessId = assignBizSelect?.value || '';
+    const code = pendingAssignCode;
+    if (!code || !businessId) return;
+
+    const biz = businesses.find(b => b.id === businessId);
+    if (!biz) return;
+
+    if (biz.short_code) {
+      const ok = window.confirm(
+        `"${biz.name}" currently uses /s/${biz.short_code}.\n\n` +
+          `Assign /s/${code} instead? The old stand goes back to the unassigned list.`,
+      );
+      if (!ok) return;
+    }
+
+    if (confirmAssignQrBtn) { confirmAssignQrBtn.disabled = true; confirmAssignQrBtn.textContent = 'Assigning…'; }
+    try {
+      await DatabaseService.assignShortLink(biz.id, code, biz.name);
+      closeAssignModal();
+      await loadData();
+    } catch (error) {
+      alert(`Could not assign the QR.\n\n${getSupabaseErrorMessage(error)}`);
+    } finally {
+      if (confirmAssignQrBtn) { confirmAssignQrBtn.disabled = false; confirmAssignQrBtn.textContent = 'Assign QR'; }
+    }
+  }
+
+  closeAssignQrBtn?.addEventListener('click', closeAssignModal);
+  cancelAssignQrBtn?.addEventListener('click', closeAssignModal);
+  assignQrModal?.addEventListener('click', e => { if (e.target === assignQrModal) closeAssignModal(); });
+  confirmAssignQrBtn?.addEventListener('click', () => { void confirmAssignQr(); });
+
+  // ── QR scanner (assign a printed stand from the business form) ──────────
+  function extractShortCode(value: string): string {
+    const raw = (value || '').trim();
+    if (!raw) return '';
+    const pathMatch = raw.match(/\/s\/([a-z0-9]{4,12})(?:[?#/]|$)/i);
+    if (pathMatch) return pathMatch[1].toLowerCase();
+    if (/^[a-z0-9]{4,12}$/i.test(raw)) return raw.toLowerCase();
+    return '';
+  }
+
+  function setScanStatus(text: string) {
+    if (qrScanStatus) qrScanStatus.textContent = text;
+  }
+
+  async function startScanner() {
+    if (!qrScanVideo) return;
+    scanBusy = false;
+    if (qrScanResult) { qrScanResult.hidden = true; qrScanResult.innerHTML = ''; }
+    setScanStatus('Requesting camera…');
+
+    try {
+      if (!qrScanner) {
+        qrScanner = new QrScanner(
+          qrScanVideo,
+          result => { void handleScanResult(result.data); },
+          {
+            returnDetailedScanResult: true,
+            preferredCamera: 'environment',
+            highlightScanRegion: false,
+            highlightCodeOutline: false,
+            maxScansPerSecond: 6,
+            onDecodeError: () => {},
+          },
+        );
+      }
+      await qrScanner.start();
+      setScanStatus('Point the camera at the QR code printed on the stand.');
+    } catch {
+      setScanStatus('Camera unavailable — type the code below instead.');
+    }
+  }
+
+  function stopScanner() {
+    try { qrScanner?.stop(); } catch { /* the camera may already be closed */ }
+    scanBusy = false;
+  }
+
+  async function handleScanResult(text: string) {
+    if (scanBusy) return;
+    const code = extractShortCode(text);
+    if (!code) {
+      setScanStatus('That QR is not a ReviewHub stand. Try another.');
+      return;
+    }
+    scanBusy = true;
+    try { await qrScanner?.pause(); } catch { /* ignore */ }
+    setScanStatus('Code found — checking stock…');
+    await showScanResult(code);
+    scanBusy = false;
+  }
+
+  async function showScanResult(code: string) {
+    if (!qrScanResult) return;
+
+    let link: (ShortLink & { business: Business | null }) | null = null;
+    try {
+      link = await DatabaseService.lookupShortLink(code);
+    } catch {
+      link = null;
+    }
+
+    const assignedName = link?.business?.name || '';
+    let html = `<span class="qr-scan-result-code">/s/${code}</span>`;
+
+    if (!link) {
+      html += 'This code is not in your QR stock yet. Create it in <strong>Bulk QR Stands</strong> before printing.';
+      setScanStatus('Code not found.');
+    } else if (assignedName) {
+      html += `Already in use by <strong>${assignedName}</strong>. Choosing it here moves the stand to this business.`;
+      setScanStatus('Code found — already assigned.');
+    } else {
+      html += `Blank stand from stock${link.last_label ? ` (${link.last_label})` : ''}. Ready to assign.`;
+      setScanStatus('Code found — ready to assign.');
+    }
+
+    const actions = link
+      ? `<div class="qr-scan-result-actions">
+           <button type="button" class="btn btn-primary btn-sm" data-scan-use>Use /s/${code}</button>
+           <button type="button" class="btn btn-outline btn-sm" data-scan-again>Scan again</button>
+         </div>`
+      : `<div class="qr-scan-result-actions">
+           <button type="button" class="btn btn-outline btn-sm" data-scan-again>Scan again</button>
+         </div>`;
+
+    qrScanResult.innerHTML = html + actions;
+    qrScanResult.hidden = false;
+
+    qrScanResult.querySelector('[data-scan-use]')?.addEventListener('click', () => {
+      applyScannedCode(code, assignedName);
+    });
+    qrScanResult.querySelector('[data-scan-again]')?.addEventListener('click', () => { void startScanner(); });
+  }
+
+  function applyScannedCode(code: string, assignedName = '') {
+    if (!formQrCode) return;
+    const exists = Array.from(formQrCode.options).some(option => option.value === code);
+    if (!exists) {
+      const option = document.createElement('option');
+      option.value = code;
+      option.textContent = assignedName
+        ? `/s/${code} — currently ${assignedName}`
+        : `/s/${code} — scanned stand`;
+      formQrCode.appendChild(option);
+    }
+    formQrCode.value = code;
+    updateQrFormBanner();
+    closeQrScanModal();
+  }
+
+  function openQrScanModal() {
+    if (!qrScanModal) return;
+    if (qrScanResult) { qrScanResult.hidden = true; qrScanResult.innerHTML = ''; }
+    if (qrScanManualInput) qrScanManualInput.value = '';
+    qrScanModal.style.display = 'flex';
+    void startScanner();
+  }
+
+  function closeQrScanModal() {
+    stopScanner();
+    if (qrScanModal) qrScanModal.style.display = 'none';
+  }
+
+  openQrScanBtn?.addEventListener('click', openQrScanModal);
+  closeQrScanBtn?.addEventListener('click', closeQrScanModal);
+  qrScanModal?.addEventListener('click', e => { if (e.target === qrScanModal) closeQrScanModal(); });
+
+  qrScanManualBtn?.addEventListener('click', () => {
+    const code = extractShortCode(qrScanManualInput?.value || '');
+    if (!code) {
+      setScanStatus('That is not a ReviewHub code. Try something like /s/abc123.');
+      return;
+    }
+    void showScanResult(code);
+  });
+
+  qrScanManualInput?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      (qrScanManualBtn as HTMLButtonElement | null)?.click();
     }
   });
 

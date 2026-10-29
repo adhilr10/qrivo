@@ -17,6 +17,8 @@
     "@astrojs/cloudflare": "^14.4.2",
     "@supabase/supabase-js": "^2.118.0",
     "astro": "^7.4.2",
+    "jszip": "^3.10.2",
+    "qr-scanner": "^1.4.2",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {

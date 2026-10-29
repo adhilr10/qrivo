@@ -81,6 +81,42 @@ function attachShortCode(row: BusinessRow | null): Business | null {
   };
 }
 
+/**
+ * Applies the QR choice made in the business form after the row is saved.
+ * A missing code means the business intentionally has no printed stand yet.
+ */
+async function applyShortLinkAssignment(
+  saved: Business,
+  requestedCode: string,
+  wantsUnassign: boolean,
+): Promise<Business> {
+  if (requestedCode) {
+    try {
+      saved.short_code = await DatabaseService.assignShortLink(saved.id, requestedCode, saved.name);
+    } catch (error) {
+      saved.short_link_error = error instanceof Error ? error.message : String(error);
+    }
+    return saved;
+  }
+
+  if (!wantsUnassign) return saved;
+
+  try {
+    const { data } = await requireSupabase()
+      .from('short_links')
+      .select('code')
+      .eq('business_id', saved.id)
+      .maybeSingle();
+    if (data?.code) {
+      await DatabaseService.releaseShortLink(data.code as string, saved.name);
+    }
+    saved.short_code = undefined;
+  } catch (error) {
+    saved.short_link_error = error instanceof Error ? error.message : String(error);
+  }
+  return saved;
+}
+
 function toSummary(businessId: string, slug: string, events: AnalyticsEvent[]): AnalyticsSummary {
   const count = (eventType: EventType) => events.filter((event) => event.event_type === eventType).length;
   const page_views = count('page_view');
@@ -186,7 +222,7 @@ export const DatabaseService = {
       .from('short_links')
       .select('code, business_id, last_label, created_at, updated_at')
       .is('business_id', null)
-      .order('updated_at', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (error) {
       if (/short_links/i.test(error.message) || error.code === 'PGRST205') return [];
@@ -195,74 +231,144 @@ export const DatabaseService = {
     return (data ?? []) as ShortLink[];
   },
 
-  async ensureShortLink(businessId: string, label: string, reuseCode?: string): Promise<string> {
+  /**
+   * Bulk-create blank QR codes that are not attached to any business yet.
+   * They are printed as physical stands first and assigned later, so a
+   * rejected business never forces a reprint.
+   */
+  async createShortLinks(count: number, label = ''): Promise<ShortLink[]> {
     const database = requireSupabase();
+    const total = Math.min(Math.max(Math.floor(count) || 1, 1), 500);
+    const created: ShortLink[] = [];
     const now = new Date().toISOString();
+    let remaining = total;
 
-    const existing = await database
-      .from('short_links')
-      .select('code')
-      .eq('business_id', businessId)
-      .maybeSingle();
+    for (let attempt = 0; attempt < 8 && remaining > 0; attempt++) {
+      const batchSize = Math.min(remaining, 100);
+      const rows = Array.from({ length: batchSize }, () => ({
+        code: generateShortCode(),
+        business_id: null,
+        last_label: label.trim(),
+        updated_at: now,
+      }));
 
-    if (existing.data?.code) {
-      await database
+      const { data, error } = await database
         .from('short_links')
-        .update({ last_label: label, updated_at: now })
-        .eq('code', existing.data.code);
-      return existing.data.code as string;
+        .insert(rows)
+        .select('code, business_id, last_label, created_at, updated_at');
+
+      if (error) {
+        // A duplicate code collision aborts the whole batch; retry with new codes.
+        if (/duplicate|unique/i.test(error.message)) continue;
+        throw error;
+      }
+
+      created.push(...((data ?? []) as ShortLink[]));
+      remaining -= rows.length;
     }
 
-    if (reuseCode) {
-      const assigned = await database
-        .from('short_links')
-        .update({ business_id: businessId, last_label: label, updated_at: now })
-        .eq('code', reuseCode.toLowerCase())
-        .is('business_id', null)
-        .select('code')
-        .maybeSingle();
-
-      if (assigned.error) throw assigned.error;
-      if (assigned.data?.code) return assigned.data.code as string;
+    if (remaining > 0) {
+      throw new Error('Unable to allocate enough unique QR codes. Try a smaller number.');
     }
-
-    for (let attempt = 0; attempt < 8; attempt++) {
-      const code = generateShortCode();
-      const inserted = await database
-        .from('short_links')
-        .insert({ code, business_id: businessId, last_label: label, updated_at: now })
-        .select('code')
-        .single();
-
-      if (!inserted.error && inserted.data?.code) return inserted.data.code as string;
-      if (inserted.error && !/duplicate|unique/i.test(inserted.error.message)) throw inserted.error;
-    }
-
-    throw new Error('Unable to allocate a unique QR short link.');
+    return created;
   },
 
-  async ensureShortLinks(businesses: Business[]): Promise<Business[]> {
-    const next: Business[] = [];
-    for (const business of businesses) {
-      if (business.short_code) {
-        next.push(business);
-        continue;
-      }
-      try {
-        const code = await this.ensureShortLink(business.id, business.name);
-        next.push({ ...business, short_code: code });
-      } catch (error) {
-        console.warn('Unable to create short link for business', business.id, error);
-        next.push(business);
+  /**
+   * Point an existing printed code at a business. A business owns at most one
+   * code, so its previous code is released first; the old stand stays valid and
+   * returns to the unassigned stock.
+   */
+  async assignShortLink(businessId: string, code: string, label: string): Promise<string> {
+    const database = requireSupabase();
+    const target = code.trim().toLowerCase();
+    if (!/^[a-z0-9]{4,12}$/.test(target)) {
+      throw new Error(`"${code}" is not a valid QR code.`);
+    }
+    const now = new Date().toISOString();
+
+    // Verify the printed stand exists before touching the current assignment,
+    // so a bad code cannot leave the business without a QR.
+    const targetRow = await database
+      .from('short_links')
+      .select('code, business_id')
+      .eq('code', target)
+      .maybeSingle();
+
+    if (targetRow.error) throw targetRow.error;
+    if (!targetRow.data) {
+      throw new Error(
+        `QR code /s/${target} was not found. Create it in Bulk QR first, or scan the printed stand again.`,
+      );
+    }
+
+    if (targetRow.data.business_id !== businessId) {
+      const existing = await database
+        .from('short_links')
+        .select('code, last_label')
+        .eq('business_id', businessId)
+        .maybeSingle();
+
+      if (existing.error) throw existing.error;
+
+      if (existing.data?.code && existing.data.code !== target) {
+        const released = await database
+          .from('short_links')
+          .update({
+            business_id: null,
+            last_label: existing.data.last_label || label,
+            updated_at: now,
+          })
+          .eq('code', existing.data.code);
+        if (released.error) throw released.error;
       }
     }
-    return next;
+
+    const { data, error } = await database
+      .from('short_links')
+      .update({ business_id: businessId, last_label: label, updated_at: now })
+      .eq('code', target)
+      .select('code');
+
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new Error(`QR code /s/${target} could not be assigned. Check the SQL policies in the Admin Portal.`);
+    }
+    return (data[0] as { code: string }).code;
+  },
+
+  /** Detach a code from its business and keep the last name for stock history. */
+  async releaseShortLink(code: string, label = ''): Promise<void> {
+    const database = requireSupabase();
+    const target = code.trim().toLowerCase();
+    const { data, error } = await database
+      .from('short_links')
+      .update({
+        business_id: null,
+        last_label: label || 'Unassigned QR',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('code', target)
+      .select('code');
+
+    if (error) throw error;
+    if (!data || data.length === 0) {
+      throw new Error(`QR code /s/${target} was not found.`);
+    }
+  },
+
+  /** Metadata for the scanner: does this printed code exist, and where does it point? */
+  async lookupShortLink(code: string): Promise<(ShortLink & { business: Business | null }) | null> {
+    return this.getShortLink(code);
   },
 
   async saveBusiness(business: Partial<Business> & { name: string; slug: string }): Promise<Business> {
     const database = requireSupabase();
     const { id: userId, email: userEmail } = await getAuthenticatedUser();
     const isNew = !business.id;
+    const requestedCode = (business.short_code || '').trim().toLowerCase();
+    // On edit, an empty string means "explicitly remove the QR". Undefined means
+    // "leave the current assignment alone".
+    const wantsUnassign = !isNew && business.short_code === '';
     const values: Record<string, unknown> = {
       name: business.name.trim(),
       slug: business.slug.trim().toLowerCase(),
@@ -300,19 +406,11 @@ export const DatabaseService = {
         : database.from('businesses').insert(fallbackValues);
       const fallbackRes = await fallbackQuery.select().single();
       if (!fallbackRes.error && fallbackRes.data) {
-        // Still ensure a short link is created/assigned on the fallback path
-        const fallbackSaved = fallbackRes.data as Business;
-        try {
-          const shortCode = await this.ensureShortLink(
-            fallbackSaved.id,
-            fallbackSaved.name,
-            business.short_code
-          );
-          fallbackSaved.short_code = shortCode;
-        } catch (shortLinkError) {
-          console.warn('Business saved (fallback) but short link could not be created:', shortLinkError);
-        }
-        return fallbackSaved;
+        return applyShortLinkAssignment(
+          fallbackRes.data as Business,
+          requestedCode,
+          wantsUnassign,
+        );
       }
     }
 
@@ -327,32 +425,21 @@ export const DatabaseService = {
       }
       throw error;
     }
-    const saved = data as Business;
-    try {
-      const shortCode = await this.ensureShortLink(
-        saved.id,
-        saved.name,
-        business.short_code
-      );
-      saved.short_code = shortCode;
-    } catch (shortLinkError) {
-      console.warn('Business saved but short link could not be created:', shortLinkError);
-    }
-    return saved;
+
+    return applyShortLinkAssignment(data as Business, requestedCode, wantsUnassign);
   },
 
   async deleteBusiness(id: string): Promise<boolean> {
     const database = requireSupabase();
-    const existing = await database.from('short_links').select('code, last_label').eq('business_id', id).maybeSingle();
-    if (existing.data?.code) {
-      await database
-        .from('short_links')
-        .update({
-          last_label: existing.data.last_label || 'Unassigned QR',
-          updated_at: new Date().toISOString(),
-        })
-        .eq('code', existing.data.code);
-    }
+    // Read the code before the row disappears, so the printed stand keeps a
+    // useful "last used by" label in the unassigned stock.
+    const existing = await database
+      .from('short_links')
+      .select('code, last_label')
+      .eq('business_id', id)
+      .maybeSingle();
+    const code = existing.data?.code as string | undefined;
+    const lastLabel = (existing.data?.last_label as string | undefined) || 'Unassigned QR';
 
     const { data: deleted, error } = await database
       .from('businesses')
@@ -367,6 +454,19 @@ export const DatabaseService = {
           'Open SQL in the Admin Portal and run the shared-admin policies so every signed-in admin can manage any business.',
       );
     }
+
+    // The foreign key nulls business_id; make the release explicit and keep the
+    // label so the stand is easy to find when it is reused.
+    if (code) {
+      const released = await database
+        .from('short_links')
+        .update({ business_id: null, last_label: lastLabel, updated_at: new Date().toISOString() })
+        .eq('code', code);
+      if (released.error) {
+        console.warn('Business deleted but its QR code could not be released:', released.error.message);
+      }
+    }
+
     return true;
   },
 

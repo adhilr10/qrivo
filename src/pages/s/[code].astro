@@ -69,7 +69,7 @@ if (assignedSlug) {
 
         <p style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 0.5rem;">
           {linkExists
-            ? `This physical QR card (${code})${lastLabel ? ` — last used by "${lastLabel}" —` : ''} is permanently valid. Assign it to a new business in the Admin Portal and the printed stand starts working immediately.`
+            ? `This physical QR card (${code})${lastLabel ? ` — ${lastLabel} —` : ''} is permanently valid. Assign it to a new business in the Admin Portal and the printed stand starts working immediately.`
             : `No shortener record exists for /s/${code}. Check the Admin Portal to create or assign this code.`}
         </p>
 

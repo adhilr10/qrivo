@@ -20,6 +20,8 @@ export interface Business {
   slug: string;
   /** Permanent QR shortener code. Never changes when the business slug is replaced. */
   short_code?: string;
+  /** Set by the client when the saved business could not be linked to a QR. */
+  short_link_error?: string;
   logo_url?: string;
   brand_color: string;
   tagline?: string;

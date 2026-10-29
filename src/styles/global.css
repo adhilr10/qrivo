@@ -134,6 +134,14 @@ input, textarea, select {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.site-nav-inner nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .brand-badge {
@@ -143,6 +151,8 @@ input, textarea, select {
   font-weight: 800;
   font-size: 1.25rem;
   color: var(--text-main);
+  min-width: 0;
+  white-space: nowrap;
 }
 
 .brand-icon-box {
@@ -351,9 +361,13 @@ input, textarea, select {
 }
 
 /* ── Social Grid ─────────────────────────────────────────────────────────── */
+/* Flex (not 4 fixed columns) so missing Instagram/Facebook buttons stay
+   centered and keep an even size instead of leaving empty grid cells. */
 .social-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
   gap: 0.625rem;
   margin-bottom: 1.25rem;
 }
@@ -364,7 +378,10 @@ input, textarea, select {
   align-items: center;
   justify-content: center;
   gap: 0.3rem;
-  padding: 0.75rem 0.25rem;
+  flex: 1 1 74px;
+  min-width: 0;
+  max-width: 140px;
+  padding: 0.75rem 0.35rem;
   background: var(--bg-main);
   border: var(--bw) solid var(--border-main);
   border-radius: var(--radius-md);
@@ -374,7 +391,16 @@ input, textarea, select {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  text-align: center;
   box-shadow: var(--shadow-hard-sm);
+}
+
+.social-action-btn > span {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .social-action-btn:hover {
@@ -675,6 +701,74 @@ input, textarea, select {
   color: var(--accent-green);
   font-weight: 600;
   margin-top: 0.35rem;
+}
+
+/* ==============================================================================
+   Mobile layout
+   ============================================================================== */
+@media (max-width: 639px) {
+  .container {
+    padding: 0 1rem;
+  }
+}
+
+@media (max-width: 479px) {
+  .site-nav {
+    padding: 0.55rem 0;
+  }
+
+  .brand-badge {
+    font-size: 1.0625rem;
+    gap: 0.45rem;
+  }
+
+  .brand-icon-box {
+    width: 30px;
+    height: 30px;
+  }
+
+  .site-nav-inner {
+    gap: 0.5rem;
+  }
+
+  .site-nav-inner nav {
+    gap: 0.35rem;
+  }
+
+  /* Two large buttons + the wordmark do not fit a phone; keep the admin
+     shortcut and drop the demo link instead of scrolling sideways. */
+  .site-nav-demo {
+    display: none !important;
+  }
+
+  .site-nav-inner nav .btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.6875rem;
+  }
+
+  .counter-page-wrapper {
+    padding: 1.25rem 0.75rem 2rem;
+  }
+
+  .counter-card {
+    padding: 1.5rem 1rem;
+    box-shadow: 5px 5px 0 #0a0a0a;
+  }
+
+  .social-action-btn {
+    flex: 1 1 calc(50% - 0.3125rem);
+    max-width: calc(50% - 0.3125rem);
+  }
+}
+
+@media (max-width: 359px) {
+  .counter-card {
+    padding: 1.25rem 0.75rem;
+  }
+
+  .biz-title {
+    font-size: 1.25rem;
+  }
 }
 
 /* ==============================================================================

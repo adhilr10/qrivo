@@ -1,0 +1,205 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>Mobile audit</title>
+<style>
+  body { margin: 0; background: #222; font-family: ui-monospace, monospace; color: #eee; }
+  .phone { width: 390px; height: 2600px; border: 0; background: #fff; display: block; }
+  .phone.narrow { width: 360px; }
+  pre { position: fixed; right: 0; top: 0; width: calc(100vw - 410px); max-height: 100vh; overflow: auto; background: #000; color: #0f0; padding: 10px; font-size: 11px; }
+</style>
+</head>
+<body>
+<iframe class="phone" id="frame"></iframe>
+<pre id="report">loading…</pre>
+
+<script>
+const frame = document.getElementById('frame');
+const report = document.getElementById('report');
+const width = Number(new URLSearchParams(location.search).get('w') || 390);
+frame.style.width = width + 'px';
+const tab = new URLSearchParams(location.search).get('tab') || 'businessesTab';
+const openModal = new URLSearchParams(location.search).get('modal');
+
+const plain = (value) => String(value ?? '');
+
+function card(b) {
+  return `
+  <div class="biz-card-item" style="--card-brand:${b.color};">
+    <div class="biz-card-body">
+      <div class="biz-card-top">
+        <img src="${b.logo}" alt="${b.name}" class="biz-card-logo" />
+        <div class="biz-card-meta">
+          <div class="biz-card-name" title="${b.name}">${b.name}</div>
+          ${b.code ? `<a href="/s/${b.code}" class="biz-card-short-link">/s/${b.code} ↗</a>` : `<span class="biz-card-no-qr">No QR assigned</span>`}
+        </div>
+        <span class="status-pill online biz-card-status">Active</span>
+      </div>
+      <div class="biz-card-owner-row">
+        <div class="biz-card-owner-avatar">S</div>
+        <div class="biz-card-owner-info">
+          <span class="biz-card-owner-label">Created by</span>
+          <span class="biz-card-owner-email">sithoooi.ventures@gmail.com</span>
+        </div>
+        <span class="biz-card-created-date">Oct 29, 2026</span>
+      </div>
+    </div>
+    <div class="biz-card-footer">
+      <button class="btn btn-outline btn-sm copy-slug-btn">📋 Copy QR</button>
+      <div class="biz-card-action-group">
+        <button class="btn btn-outline btn-sm">QR</button>
+        <button class="btn btn-secondary btn-sm">Edit</button>
+        <button class="btn btn-danger btn-sm">✕</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function run() {
+  const html = await (await fetch('/admin')).text();
+  const cleaned = html.replace(/<script[\s\S]*?<\/script>/gi, '');
+
+  await new Promise((resolve) => {
+    frame.addEventListener('load', resolve, { once: true });
+    frame.srcdoc = cleaned;
+    setTimeout(resolve, 8000);
+  });
+
+  const doc = frame.contentDocument;
+  const win = frame.contentWindow;
+
+  // Show the requested tab only.
+  doc.querySelectorAll('.tab-content').forEach((el) => { el.style.display = 'none'; });
+  const active = doc.getElementById(tab);
+  if (active) active.style.display = 'block';
+
+  // Mock the JS-rendered content.
+  const cards = [
+    { name: 'MKM Biriyani House', code: 'k7m2pq', color: '#d97706', logo: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=120&auto=format&fit=crop&q=80' },
+    { name: 'Sithoooi Ventures Private Limited', code: '', color: '#059669', logo: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=120&auto=format&fit=crop&q=80' },
+  ];
+  const list = doc.getElementById('businessListContainer');
+  if (list) list.innerHTML = cards.map(card).join('');
+
+  doc.getElementById('bizCountBadge').textContent = '2';
+  doc.getElementById('mobileBizBadge').textContent = '2';
+  doc.getElementById('backendStatusText').textContent = 'Supabase Connected';
+  doc.getElementById('adminUserEmail').textContent = 'sithoooi.ventures@gmail.com';
+
+  const stock = doc.getElementById('qrStockList');
+  if (stock) {
+    const row = (code, date) => `
+      <div class="qr-stock-item">
+        <span class="qr-stock-code">/s/${code}</span>
+        <span class="qr-stock-meta">${date}</span>
+        <div class="qr-stock-actions">
+          <button class="btn btn-outline btn-sm">Copy</button>
+          <button class="btn btn-outline btn-sm">PNG</button>
+          <button class="btn btn-secondary btn-sm">Assign</button>
+        </div>
+      </div>`;
+    stock.innerHTML = `
+      <div class="qr-stock-batch">
+        <div class="qr-stock-batch-head">
+          <span class="qr-stock-batch-name">October batch A</span>
+          <span class="qr-stock-batch-count">12 codes</span>
+          <button class="btn btn-secondary btn-sm qr-stock-batch-download">⬇ Download ZIP</button>
+        </div>
+        ${row('k7m2pq', 'Oct 29')}${row('x4r9tn', 'Oct 29')}
+      </div>
+      <div class="qr-stock-batch">
+        <div class="qr-stock-batch-head">
+          <span class="qr-stock-batch-name">Batch 2026-10-28 19:12</span>
+          <span class="qr-stock-batch-count">3 codes</span>
+          <button class="btn btn-secondary btn-sm qr-stock-batch-download">⬇ Download ZIP</button>
+        </div>
+        ${row('b8w3yz', 'Oct 28')}
+      </div>`;
+    doc.getElementById('qrStockCountBadge').textContent = '15 in stock';
+    doc.getElementById('qrBulkResult').hidden = false;
+    doc.getElementById('qrBulkResult').innerHTML =
+      '<div class="qr-bulk-result-text">✓ Created <strong>12</strong> QR codes in <strong>October batch A</strong>. Download the batch as one ZIP.</div>' +
+      '<button class="btn btn-primary btn-sm">⬇ Download 12 PNGs (ZIP)</button>';
+  }
+
+  if (tab === 'analyticsTab') {
+    doc.getElementById('statTotalViews').textContent = '1284';
+    doc.getElementById('statReviewClicks').textContent = '512';
+    doc.getElementById('statWaClicks').textContent = '233';
+    doc.getElementById('statSocialClicks').textContent = '91';
+    doc.getElementById('statAvgConversion').textContent = '39%';
+    doc.getElementById('analyticsTableBody').innerHTML = `
+      <tr><td>MKM Biriyani House</td><td class="text-center">820</td><td class="text-center">310</td><td class="text-center">120</td><td class="text-center hide-sm">44</td><td class="text-center">38%</td></tr>
+      <tr><td>Sithoooi Ventures</td><td class="text-center">464</td><td class="text-center">202</td><td class="text-center">113</td><td class="text-center hide-sm">47</td><td class="text-center">41%</td></tr>`;
+    doc.getElementById('liveActivityFeed').innerHTML = `
+      <div class="biz-card-owner-row"><div class="biz-card-owner-avatar">S</div><div class="biz-card-owner-info"><span class="biz-card-owner-label">Google review click</span><span class="biz-card-owner-email">MKM Biriyani House · just now</span></div></div>`;
+  }
+
+  if (openModal) {
+    const modal = doc.getElementById(openModal);
+    if (modal) {
+      modal.style.display = 'flex';
+      const qr = doc.getElementById('formQrCode');
+      if (qr) {
+        qr.innerHTML = '<option value="">— No QR yet (assign later) —</option>' +
+          '<optgroup label="Unassigned QR stock (15)"><option value="k7m2pq">/s/k7m2pq — blank stand</option><option value="x4r9tn">/s/x4r9tn — blank stand</option></optgroup>';
+        qr.value = 'k7m2pq';
+      }
+      const banner = doc.getElementById('formQrBanner');
+      if (banner) {
+        banner.hidden = false;
+        banner.className = 'qr-form-banner is-ok';
+        banner.innerHTML = 'This business will use <strong>/s/k7m2pq</strong> — the printed stand works as soon as you save.';
+      }
+      const select = doc.getElementById('assignBizSelect');
+      if (select) select.innerHTML = '<option>MKM Biriyani House — no QR yet</option><option>Chaya Kada — currently /s/abc123</option>';
+      const prev = doc.getElementById('assignQrPreview');
+      if (prev) prev.innerHTML = '<div class="assign-qr-text"><span class="assign-qr-code">/s/k7m2pq</span>Blank stand — pick the business that should answer this scan.</div>';
+    }
+  }
+
+  await new Promise((r) => setTimeout(r, 400));
+
+  // Overflow audit
+  const vw = 390;
+  const offenders = [];
+  for (const el of doc.querySelectorAll('body *')) {
+    const style = win.getComputedStyle(el);
+    if (style.display === 'none' || style.visibility === 'hidden') continue;
+    if (style.position === 'fixed') continue;
+    const r = el.getBoundingClientRect();
+    if (r.width === 0) continue;
+    if (r.right > width + 1 || r.left < -1) {
+      offenders.push({
+        tag: el.tagName.toLowerCase(),
+        cls: plain(el.className).slice(0, 60),
+        id: el.id,
+        left: Math.round(r.left),
+        right: Math.round(r.right),
+        width: Math.round(r.width),
+      });
+    }
+  }
+
+  // Deduplicate by class signature, keep the widest.
+  const seen = new Map();
+  for (const o of offenders) {
+    const key = o.tag + '|' + o.id + '|' + o.cls;
+    const prev = seen.get(key);
+    if (!prev || o.right > prev.right) seen.set(key, o);
+  }
+
+  const docOverflow = win.document.documentElement.scrollWidth - win.document.documentElement.clientWidth;
+  report.textContent =
+    `viewport ${width}  tab ${tab}  modal ${openModal || '-'}\n` +
+    `doc scrollWidth ${win.document.documentElement.scrollWidth} clientWidth ${win.document.documentElement.clientWidth} (overflow ${docOverflow})\n` +
+    (seen.size === 0
+      ? 'NO OVERFLOW'
+      : [...seen.values()].slice(0, 25).map((o) => `${o.tag}${o.id ? '#' + o.id : ''}.${o.cls} [${o.left} → ${o.right}] w${o.width}`).join('\n'));
+}
+
+run().catch((error) => { report.textContent = 'ERROR ' + error; });
+</script>
+</body>
+</html>
