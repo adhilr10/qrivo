@@ -310,7 +310,9 @@ import Icon from '../../components/Icon.astro';
             <div class="form-group">
               <label class="form-label" for="formGoogleUrl">
                 <span>Google Review Link *</span>
-                <a href="https://support.google.com/business/answer/7035772" target="_blank" rel="noopener noreferrer" style="font-size:.75rem;color:#60a5fa;text-decoration:underline;">How to get?</a>
+                <button type="button" id="openGoogleLinkBtn" class="gl-label-btn">
+                  🔍 Find my link
+                </button>
               </label>
               <input type="url" id="formGoogleUrl" class="form-input" placeholder="https://search.google.com/local/writereview?placeid=…" required />
             </div>
@@ -392,6 +394,94 @@ import Icon from '../../components/Icon.astro';
               </div>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         MODAL: GOOGLE REVIEW LINK GENERATOR
+         Embeds productmate.com's generator (allows framing) and adds a
+         native place-ID builder + "paste & use" bar wired to #formGoogleUrl.
+         ====================================================================== -->
+    <div id="googleLinkModal" class="modal-backdrop" style="display:none;">
+      <div class="modal-dialog gl-dialog">
+        <div class="modal-header">
+          <h2 class="modal-title gl-title">
+            <span class="gl-g">G</span>
+            <span>Google Review Link Generator</span>
+          </h2>
+          <button type="button" id="closeGoogleLinkBtn" class="modal-close-btn">&times;</button>
+        </div>
+
+        <div class="gl-body">
+          <div class="gl-steps">
+            <span class="gl-step">1 · Paste a Google Maps link</span>
+            <span class="gl-step">2 · Get the review link</span>
+            <span class="gl-step">3 · Click Use this link</span>
+          </div>
+
+          <div class="gl-quick">
+            <label class="gl-quick-label" for="glPlaceIdInput">
+              Fastest — paste the business's Google Maps link (or its Place ID)
+            </label>
+            <div class="gl-quick-row">
+              <input
+                type="text"
+                id="glPlaceIdInput"
+                class="form-input"
+                placeholder="https://maps.app.goo.gl/… or ChIJ…"
+                autocomplete="off"
+              />
+              <button type="button" id="glBuildBtn" class="btn btn-secondary btn-sm">Get link</button>
+            </div>
+            <div id="glBuiltError" class="gl-error" hidden></div>
+            <div id="glBuiltPreview" class="gl-preview" hidden>
+              <div class="gl-preview-label">Direct review link</div>
+              <code id="glBuiltUrl"></code>
+              <div id="glBuiltPlaceIdRow" class="gl-place-id" hidden>
+                Place ID: <code id="glBuiltPlaceId"></code>
+              </div>
+              <div class="gl-manual-actions">
+                <button type="button" id="glCopyBuiltBtn" class="btn btn-outline btn-sm">Copy link</button>
+                <button type="button" id="glUseBuiltBtn" class="btn btn-primary btn-sm">Use this link</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="gl-toolbar">
+            <a class="btn btn-outline btn-sm" href="https://productmate.com/google-review-link-generator" target="_blank" rel="noopener noreferrer">
+              <Icon name="external-link" size={14} />
+              <span>Open generator in new tab</span>
+            </a>
+            <a class="btn btn-outline btn-sm" href="https://www.google.com/maps/search/" target="_blank" rel="noopener noreferrer">
+              <Icon name="google" size={14} />
+              <span>Find on Google Maps</span>
+            </a>
+          </div>
+
+          <div class="gl-frame-label">Or search by name in the generator</div>
+
+          <div class="gl-frame-wrap">
+            <div id="glFrameLoading" class="gl-frame-loading">Loading generator…</div>
+            <iframe
+              id="glFrame"
+              class="gl-frame"
+              title="Google Review Link Generator"
+              data-src="https://productmate.com/google-review-link-generator"
+              allow="clipboard-write; clipboard-read"
+              referrerpolicy="no-referrer-when-downgrade"
+            ></iframe>
+          </div>
+        </div>
+
+        <div class="gl-footer">
+          <input
+            type="url"
+            id="glPasteInput"
+            class="form-input gl-paste-input"
+            placeholder="Paste the review link here…"
+          />
+          <button type="button" id="glUsePasteBtn" class="btn btn-primary">Use link</button>
         </div>
       </div>
     </div>
@@ -1091,6 +1181,231 @@ input:checked + .slider:before { transform: translateX(22px); }
   resize: vertical;
 }
 
+/* ── Google review link generator modal ─────────────────────────────────── */
+.gl-label-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #1d4ed8;
+  background: #eef4ff;
+  border: 1.5px solid #1d4ed8;
+  border-radius: 999px;
+  padding: 0.12rem 0.5rem;
+  cursor: pointer;
+  line-height: 1.5;
+  box-shadow: 1.5px 1.5px 0 #0a0a0a;
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.gl-label-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 2.5px 2.5px 0 #0a0a0a;
+}
+
+.gl-label-btn:active {
+  transform: translate(1px, 1px);
+  box-shadow: 0 0 0 #0a0a0a;
+}
+
+.gl-dialog {
+  max-width: 1080px;
+  height: min(90vh, 880px);
+  max-height: none;
+  display: flex;
+  flex-direction: column;
+}
+
+.gl-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.gl-g {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #0a0a0a;
+  color: #4285f4;
+  font-size: 0.85rem;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.gl-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.gl-steps,
+.gl-toolbar,
+.gl-quick,
+.gl-frame-label {
+  flex-shrink: 0;
+}
+
+.gl-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.gl-step {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #0a0a0a;
+  background: #fff8e7;
+  border: 1.5px solid #0a0a0a;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+}
+
+.gl-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.gl-frame-wrap {
+  position: relative;
+  flex: 1 1 200px;
+  min-height: 200px;
+  border: 2.5px solid #0a0a0a;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 4px 4px 0 #0a0a0a;
+}
+
+.gl-frame {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #ffffff;
+}
+
+.gl-frame-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #4a4a4a;
+  background: #fffdf5;
+  z-index: 1;
+}
+
+.gl-quick {
+  border: 2px solid #0a0a0a;
+  border-radius: 6px;
+  background: #fffdf5;
+  padding: 0.6rem 0.75rem;
+}
+
+.gl-quick-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #0a0a0a;
+  margin-bottom: 0.4rem;
+}
+
+.gl-quick-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.gl-quick-row .form-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.gl-error {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.45;
+  color: #b91c1c;
+  background: #fef2f2;
+  border: 2px solid #b91c1c;
+  border-radius: 6px;
+  padding: 0.4rem 0.55rem;
+}
+
+.gl-preview {
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  word-break: break-all;
+  background: #ffffff;
+  border: 2px dashed #0a0a0a;
+  border-radius: 6px;
+  padding: 0.5rem 0.6rem;
+  color: #15803d;
+  font-weight: 700;
+}
+
+.gl-preview code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+.gl-preview-label {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #4a4a4a;
+  font-weight: 800;
+  margin-bottom: 0.15rem;
+}
+
+.gl-place-id {
+  margin-top: 0.3rem;
+  font-size: 0.68rem;
+  color: #4a4a4a;
+  font-weight: 600;
+}
+
+.gl-frame-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #4a4a4a;
+  text-align: center;
+}
+
+.gl-manual-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.gl-footer {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-top: 2.5px solid #0a0a0a;
+  background: #fff8e7;
+}
+
+.gl-paste-input {
+  flex: 1;
+  min-width: 0;
+}
+
 /* Slug availability badge */
 #slugAvailabilityBadge {
   font-size: 0.6875rem;
@@ -1137,6 +1452,27 @@ input:checked + .slider:before { transform: translateX(22px); }
     max-height: 92vh;
     box-shadow: 0 -4px 0 #0a0a0a;
   }
+  .gl-dialog {
+    max-width: none;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    box-shadow: none;
+  }
+  .gl-body { padding: 0.75rem; gap: 0.6rem; }
+  .gl-step { font-size: 0.65rem; padding: 0.15rem 0.45rem; }
+  .gl-quick-row { flex-wrap: wrap; }
+  .gl-quick-row .form-input { flex: 1 0 100%; }
+  .gl-quick-row .btn { width: 100%; }
+  .gl-manual-actions .btn { flex: 1; }
+  .gl-footer {
+    padding: 0.65rem 0.75rem;
+    flex-wrap: wrap;
+  }
+  .gl-footer .btn { width: 100%; }
 }
 
 @media (min-width: 640px) and (max-width: 899px) {
@@ -1495,6 +1831,23 @@ input:checked + .slider:before { transform: translateX(22px); }
   const formShortLinkDisplay = document.getElementById('formShortLinkDisplay') as HTMLInputElement;
   const shortLinkCreateGroup = document.getElementById('shortLinkCreateGroup');
   const shortLinkEditGroup   = document.getElementById('shortLinkEditGroup');
+
+  const googleLinkModal    = document.getElementById('googleLinkModal');
+  const openGoogleLinkBtn  = document.getElementById('openGoogleLinkBtn');
+  const closeGoogleLinkBtn = document.getElementById('closeGoogleLinkBtn');
+  const glFrame            = document.getElementById('glFrame') as HTMLIFrameElement | null;
+  const glFrameLoading     = document.getElementById('glFrameLoading');
+  const glPasteInput       = document.getElementById('glPasteInput') as HTMLInputElement | null;
+  const glUsePasteBtn      = document.getElementById('glUsePasteBtn');
+  const glPlaceIdInput     = document.getElementById('glPlaceIdInput') as HTMLInputElement | null;
+  const glBuildBtn         = document.getElementById('glBuildBtn');
+  const glBuiltPreview     = document.getElementById('glBuiltPreview');
+  const glBuiltUrl         = document.getElementById('glBuiltUrl');
+  const glBuiltError       = document.getElementById('glBuiltError');
+  const glBuiltPlaceIdRow  = document.getElementById('glBuiltPlaceIdRow');
+  const glBuiltPlaceId     = document.getElementById('glBuiltPlaceId');
+  const glCopyBuiltBtn     = document.getElementById('glCopyBuiltBtn');
+  const glUseBuiltBtn      = document.getElementById('glUseBuiltBtn');
 
   const prevImg     = document.getElementById('prevImg') as HTMLImageElement;
   const prevName    = document.getElementById('prevName');
@@ -2093,6 +2446,169 @@ input:checked + .slider:before { transform: translateX(22px); }
             </div>`).join('');
     }
   }
+
+  // ── Google review link generator ────────────────────────────────────────
+  const WRITE_REVIEW_BASE = 'https://search.google.com/local/writereview?placeid=';
+  let builtReviewUrl = '';
+
+  // Accept a raw Place ID, or pull one out of a Google Maps link.
+  function extractPlaceId(value: string): string {
+    const raw = (value || '').trim();
+    if (!raw) return '';
+    if (/^[A-Za-z0-9_-]{15,}$/.test(raw)) return raw;
+    const explicit = raw.match(/place_?id(?:=|%3D|:)\s*([A-Za-z0-9_-]{10,})/i);
+    if (explicit) return decodeURIComponent(explicit[1]);
+    const legacy = raw.match(/ChIJ[A-Za-z0-9_-]{5,}/);
+    if (legacy) return legacy[0];
+    return '';
+  }
+
+  function applyReviewLink(url: string) {
+    const clean = (url || '').trim();
+    if (!/^https?:\/\//i.test(clean)) {
+      alert('Paste a full link that starts with https://');
+      return;
+    }
+    formGoogleUrl.value = clean;
+    formGoogleUrl.dispatchEvent(new Event('input', { bubbles: true }));
+    closeGoogleLinkModal();
+  }
+
+  function openGoogleLinkModal() {
+    if (!googleLinkModal) return;
+    // Load the embedded generator only the first time it is needed.
+    if (glFrame && !glFrame.getAttribute('src')) {
+      if (glFrameLoading) glFrameLoading.style.display = 'grid';
+      glFrame.src = glFrame.dataset.src || '';
+    }
+    if (glPasteInput) glPasteInput.value = '';
+    googleLinkModal.style.display = 'flex';
+  }
+
+  function closeGoogleLinkModal() {
+    if (googleLinkModal) googleLinkModal.style.display = 'none';
+  }
+
+  function showBuiltError(message: string) {
+    if (!glBuiltError) return;
+    glBuiltError.textContent = message;
+    glBuiltError.hidden = !message;
+  }
+
+  function showBuiltResult(url: string, placeId = '') {
+    builtReviewUrl = url;
+    if (glBuiltUrl) glBuiltUrl.textContent = url;
+    if (glBuiltPlaceId && glBuiltPlaceIdRow) {
+      glBuiltPlaceId.textContent = placeId;
+      glBuiltPlaceIdRow.hidden = !placeId;
+    }
+    if (glBuiltPreview) glBuiltPreview.hidden = false;
+    showBuiltError('');
+  }
+
+  function hideBuiltResult() {
+    builtReviewUrl = '';
+    if (glBuiltPreview) glBuiltPreview.hidden = true;
+    if (glBuiltPlaceIdRow) glBuiltPlaceIdRow.hidden = true;
+  }
+
+  // A Place ID can become a review link without any network call.
+  function buildFromPlaceId(value: string): string {
+    const id = extractPlaceId(value);
+    if (!id) return '';
+    const url = WRITE_REVIEW_BASE + encodeURIComponent(id);
+    showBuiltResult(url, id);
+    return url;
+  }
+
+  // Maps links (including maps.app.goo.gl share links) are resolved server-side
+  // through /api/review-link, because the upstream API sends no CORS headers.
+  async function resolveReviewLink() {
+    const raw = (glPlaceIdInput?.value || '').trim();
+    if (!raw) {
+      showBuiltError('Paste a Google Maps link or a Place ID first.');
+      return;
+    }
+
+    if (!/^https?:\/\//i.test(raw)) {
+      if (buildFromPlaceId(raw)) return;
+      showBuiltError('Paste the business\'s Google Maps link (Share → Copy link) or a Place ID starting with "ChIJ".');
+      return;
+    }
+
+    hideBuiltResult();
+    const btn = glBuildBtn as HTMLButtonElement | null;
+    if (btn) { btn.disabled = true; btn.textContent = 'Finding…'; }
+
+    try {
+      const res = await fetch('/api/review-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maps_url: raw }),
+      });
+      const data = (await res.json().catch(() => null)) as
+        | { review_url?: string; place_id?: string; error?: { message?: string } }
+        | null;
+
+      if (!res.ok || !data?.review_url) {
+        showBuiltError(
+          data?.error?.message || 'Could not read that link. Try the Share link for the exact business.',
+        );
+        return;
+      }
+
+      showBuiltResult(data.review_url, data.place_id || '');
+    } catch {
+      showBuiltError('Could not reach the lookup service. Use the generator below instead.');
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Get link'; }
+    }
+  }
+
+  glFrame?.addEventListener('load', () => {
+    if (glFrame.getAttribute('src') && glFrameLoading) glFrameLoading.style.display = 'none';
+  });
+
+  openGoogleLinkBtn?.addEventListener('click', openGoogleLinkModal);
+  closeGoogleLinkBtn?.addEventListener('click', closeGoogleLinkModal);
+  googleLinkModal?.addEventListener('click', e => { if (e.target === googleLinkModal) closeGoogleLinkModal(); });
+
+  glPlaceIdInput?.addEventListener('input', () => {
+    showBuiltError('');
+    const value = glPlaceIdInput.value.trim();
+    // Live preview for a raw Place ID; Maps links need the lookup round-trip.
+    if (!value || /^https?:\/\//i.test(value) || !buildFromPlaceId(value)) hideBuiltResult();
+  });
+
+  glPlaceIdInput?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); void resolveReviewLink(); }
+  });
+
+  glBuildBtn?.addEventListener('click', () => { void resolveReviewLink(); });
+
+  glCopyBuiltBtn?.addEventListener('click', async () => {
+    const url = builtReviewUrl || buildFromPlaceId(glPlaceIdInput?.value || '');
+    if (!url) return;
+    try {
+      await navigator.clipboard.writeText(url);
+      const btn = glCopyBuiltBtn as HTMLButtonElement;
+      const original = btn.textContent || 'Copy link';
+      btn.textContent = '✓ Copied!';
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    } catch {
+      alert('Copy failed. Select the link above and copy it manually.');
+    }
+  });
+
+  glUseBuiltBtn?.addEventListener('click', () => {
+    const url = builtReviewUrl || buildFromPlaceId(glPlaceIdInput?.value || '');
+    if (url) applyReviewLink(url);
+  });
+
+  glUsePasteBtn?.addEventListener('click', () => applyReviewLink(glPasteInput?.value || ''));
+  glPasteInput?.addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); applyReviewLink(glPasteInput.value); }
+  });
 
   // ── Supabase modal ───────────────────────────────────────────────────────
   supabaseSetupModalBtn?.addEventListener('click', () => { if (supabaseModal) supabaseModal.style.display = 'flex'; });
