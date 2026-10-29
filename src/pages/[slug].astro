@@ -93,8 +93,8 @@ const pageTitle = business ? `${business.name} | Review on Google` : 'ReviewHub 
       >
         <Icon name="google" size={24} />
         <div style="text-align: left; flex: 1;">
-          <div style="font-size: 1.0625rem; font-weight: 700; line-height: 1.2;">Rate us on Google</div>
-          <div style="font-size: 0.75rem; color: #6b7280; font-weight: 500;">Takes 10 seconds · Direct link</div>
+          <div style="font-size: 1.0625rem; font-weight: 700; line-height: 1.2; color: #0a0a0a;">Rate us on Google</div>
+          <div style="font-size: 0.75rem; color: #4a4a4a; font-weight: 600;">Takes 10 seconds · Direct link</div>
         </div>
         <div class="stars-badge-mini">
           <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
@@ -162,10 +162,10 @@ const pageTitle = business ? `${business.name} | Review on Google` : 'ReviewHub 
     <div class="counter-card" id="inactiveBizCard" style={business && !business.is_active ? 'display: block;' : 'display: none;'}>
       <div style="padding: 2.5rem 1rem;">
         <div style="font-size: 3rem; margin-bottom: 1rem;">🏷️</div>
-        <h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;">
+        <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 0.5rem; color: #0a0a0a;">
           Counter Stand Temporarily Unavailable
         </h2>
-        <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem;">
+        <p style="font-size: 0.875rem; color: #4a4a4a; line-height: 1.5; margin-bottom: 1.5rem;">
           This business card is currently paused or undergoing updates by the administrator. 
           The physical QR code remains valid and will automatically reconnect once updated.
         </p>
@@ -179,11 +179,11 @@ const pageTitle = business ? `${business.name} | Review on Google` : 'ReviewHub 
     <div class="counter-card" id="notFoundCard" style="display: none;">
       <div style="padding: 2.5rem 1rem;">
         <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
-        <h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;">
+        <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 0.5rem; color: #0a0a0a;">
           Business Slug Not Found
         </h2>
-        <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem;">
-          No active counter configuration was found for <code id="missingSlugCode" style="color: #818cf8;"></code>. 
+        <p style="font-size: 0.875rem; color: #4a4a4a; line-height: 1.5; margin-bottom: 1.5rem;">
+          No active counter configuration was found for <code id="missingSlugCode" style="color: #1d4ed8; font-weight: 700;"></code>. 
           If you are the administrator, configure this slug in the Admin Portal.
         </p>
         <a href="/admin" class="btn btn-primary btn-sm">

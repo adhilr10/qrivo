@@ -89,8 +89,8 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
       >
         <Icon name="google" size={24} />
         <div style="text-align: left; flex: 1;">
-          <div style="font-size: 1.0625rem; font-weight: 700; line-height: 1.2;">Rate us on Google</div>
-          <div style="font-size: 0.75rem; color: #6b7280; font-weight: 500;">Takes 10 seconds · Direct link</div>
+          <div style="font-size: 1.0625rem; font-weight: 700; line-height: 1.2; color: #0a0a0a;">Rate us on Google</div>
+          <div style="font-size: 0.75rem; color: #4a4a4a; font-weight: 600;">Takes 10 seconds · Direct link</div>
         </div>
         <div class="stars-badge-mini">
           <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
@@ -147,12 +147,12 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
       </div>
 
       <!-- Quick Links: Admin & Live Demo Stand -->
-      <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 1px solid var(--border-subtle); display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
-        <a href="/admin" class="btn btn-outline btn-sm" style="font-size: 0.8125rem; padding: 0.45rem 0.9rem;">
+      <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 2.5px solid #0a0a0a; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+        <a href="/admin" class="btn btn-outline btn-sm" style="font-size: 0.75rem;">
           <Icon name="settings" size={14} />
           <span>Admin Portal</span>
         </a>
-        <a href="/artisan-cafe" class="btn btn-outline btn-sm" style="font-size: 0.8125rem; padding: 0.45rem 0.9rem;">
+        <a href="/artisan-cafe" class="btn btn-outline btn-sm" style="font-size: 0.75rem;">
           <Icon name="sparkles" size={14} />
           <span>Demo Businesses</span>
         </a>
@@ -170,10 +170,10 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
     <div class="counter-card" id="inactiveBizCard" style={business && !business.is_active ? 'display: block;' : 'display: none;'}>
       <div style="padding: 2.5rem 1rem;">
         <div style="font-size: 3rem; margin-bottom: 1rem;">🏷️</div>
-        <h2 style="font-size: 1.35rem; font-weight: 700; margin-bottom: 0.5rem; color: #ffffff;">
+        <h2 style="font-size: 1.35rem; font-weight: 800; margin-bottom: 0.5rem; color: #0a0a0a;">
           Counter Stand Temporarily Unavailable
         </h2>
-        <p style="font-size: 0.875rem; color: var(--text-muted); line-height: 1.5; margin-bottom: 1.5rem;">
+        <p style="font-size: 0.875rem; color: #4a4a4a; line-height: 1.5; margin-bottom: 1.5rem;">
           This business card is currently paused or undergoing updates by the administrator.
         </p>
         <a href="/admin" class="btn btn-primary btn-sm">
