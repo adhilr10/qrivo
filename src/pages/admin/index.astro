@@ -284,7 +284,7 @@ import Icon from '../../components/Icon.astro';
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label" for="formLogoUrl">Logo URL</label>
-                <input type="url" id="formLogoUrl" class="form-input" placeholder="https://…" />
+                <input type="url" id="formLogoUrl" class="form-input" placeholder="Optional — default logo used" />
               </div>
               <div class="form-group">
                 <label class="form-label" for="formBrandColor">Brand Color</label>
@@ -318,27 +318,27 @@ import Icon from '../../components/Icon.astro';
             <div class="form-grid">
               <div class="form-group">
                 <label class="form-label" for="formWaNumber">WhatsApp Number</label>
-                <input type="text" id="formWaNumber" class="form-input" placeholder="+15551234567" />
+                <input type="text" id="formWaNumber" class="form-input" value="91" placeholder="91XXXXXXXXXX" />
               </div>
               <div class="form-group">
                 <label class="form-label" for="formPhone">Phone Number</label>
-                <input type="text" id="formPhone" class="form-input" placeholder="+1 (555) 123-4567" />
+                <input type="text" id="formPhone" class="form-input" value="91" placeholder="91XXXXXXXXXX" />
               </div>
             </div>
 
             <div class="form-group">
               <label class="form-label" for="formWaMessage">WhatsApp Greeting</label>
-              <input type="text" id="formWaMessage" class="form-input" placeholder="Hi! I'm contacting you from your counter QR card." />
+              <input type="text" id="formWaMessage" class="form-input" placeholder="Hi" />
             </div>
 
             <div class="form-grid">
               <div class="form-group">
-                <label class="form-label" for="formInsta">Instagram URL</label>
-                <input type="url" id="formInsta" class="form-input" placeholder="https://instagram.com/…" />
+                <label class="form-label" for="formInsta">Instagram Username</label>
+                <input type="text" id="formInsta" class="form-input" placeholder="username" />
               </div>
               <div class="form-group">
-                <label class="form-label" for="formFb">Facebook URL</label>
-                <input type="url" id="formFb" class="form-input" placeholder="https://facebook.com/…" />
+                <label class="form-label" for="formFb">Facebook Username</label>
+                <input type="text" id="formFb" class="form-input" placeholder="username" />
               </div>
             </div>
 
@@ -375,15 +375,11 @@ import Icon from '../../components/Icon.astro';
                 <div class="preview-logo-wrap">
                   <img id="prevImg" src="" class="preview-logo-img" />
                 </div>
-                <div style="font-size:.65rem;color:#60a5fa;font-weight:600;margin-bottom:.25rem;">VERIFIED LOCAL BUSINESS</div>
                 <div id="prevName" style="font-size:1.1rem;font-weight:800;color:#0a0a0a;">Business Name</div>
                 <div id="prevTagline" style="font-size:.75rem;color:#4a4a4a;margin-bottom:.75rem;">Tagline</div>
                 <div style="background:#fff8e7;border:2px solid #0a0a0a;border-radius:6px;padding:.5rem;margin-bottom:.6rem;">
-                  <div style="font-size:.7rem;color:#0a0a0a;font-weight:700;margin-bottom:.2rem;">Rate your experience</div>
+                  <div style="display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.7rem;color:#0a0a0a;font-weight:700;margin-bottom:.2rem;"><span style="color:#4285f4;font-weight:900;">G</span>How was your experience today?</div>
                   <div style="color:#0a0a0a;font-size:1rem;letter-spacing:2px;">★★★★★</div>
-                </div>
-                <div style="background:#fff;color:#0a0a0a;border:2px solid #0a0a0a;border-radius:6px;padding:.6rem;font-size:.82rem;font-weight:800;margin-bottom:.5rem;display:flex;align-items:center;justify-content:center;gap:.4rem;box-shadow:2px 2px 0 #0a0a0a;">
-                  <span style="color:#4285f4;font-weight:900;">G</span>Rate us on Google
                 </div>
                 <div id="prevWa" style="display:none;background:#25d366;color:#fff;border:2px solid #0a0a0a;border-radius:6px;padding:.5rem;font-size:.78rem;font-weight:700;margin-bottom:.6rem;box-shadow:2px 2px 0 #0a0a0a;">Chat on WhatsApp</div>
                 <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-bottom:.6rem;">
@@ -640,178 +636,6 @@ CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authe
   padding: 3rem;
   color: #4a4a4a;
   font-weight: 600;
-}
-
-/* ── Business card ───────────────────────────────────────────────────────── */
-.biz-card-item {
-  background: #ffffff;
-  border: 2.5px solid #0a0a0a;
-  border-radius: 8px;
-  box-shadow: 4px 4px 0 #0a0a0a;
-  padding: 0;
-  transition: transform 0.12s, box-shadow 0.12s;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-  min-width: 0;
-  width: 100%;
-  box-sizing: border-box;
-  height: 100%;
-  /* Accent top strip */
-  border-top: 5px solid var(--card-brand, #1d4ed8);
-}
-
-.biz-card-item:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 6px 6px 0 #0a0a0a;
-}
-
-/* Body */
-.biz-card-body {
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-  flex: 1;
-}
-
-/* Top row */
-.biz-card-top {
-  display: flex;
-  align-items: center;
-  gap: 0.625rem;
-}
-
-.biz-card-logo {
-  width: 44px;
-  height: 44px;
-  min-width: 44px;
-  border-radius: 50%;
-  object-fit: cover;
-  border: 2.5px solid #0a0a0a;
-  background: #f0ede4;
-}
-
-.biz-card-meta {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.biz-card-name {
-  font-size: 0.9375rem;
-  font-weight: 800;
-  color: #0a0a0a;
-  line-height: 1.25;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  letter-spacing: -0.01em;
-}
-
-.biz-card-short-link {
-  font-size: 0.7rem;
-  color: #15803d;
-  font-family: monospace;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-}
-
-/* Status badge */
-.biz-card-status {
-  flex-shrink: 0;
-  font-size: 0.6rem !important;
-  padding: 0.15rem 0.5rem !important;
-}
-
-/* Owner pill */
-.biz-card-owner-row {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.45rem 0.625rem;
-  background: #fffdf5;
-  border: 2px solid #0a0a0a;
-  border-radius: 6px;
-  min-width: 0;
-}
-
-.biz-card-owner-avatar {
-  width: 22px;
-  height: 22px;
-  min-width: 22px;
-  border-radius: 50%;
-  background: #f5c518;
-  border: 1.5px solid #0a0a0a;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #0a0a0a;
-  font-size: 0.625rem;
-  font-weight: 800;
-}
-
-.biz-card-owner-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.biz-card-owner-label {
-  font-size: 0.575rem;
-  color: #767676;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  font-weight: 700;
-  line-height: 1;
-  margin-bottom: 0.1rem;
-}
-
-.biz-card-owner-email {
-  font-size: 0.72rem;
-  color: #1d4ed8;
-  font-weight: 700;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
-}
-
-.biz-card-created-date {
-  font-size: 0.65rem;
-  color: #767676;
-  flex-shrink: 0;
-  white-space: nowrap;
-  margin-left: auto;
-  font-weight: 600;
-}
-
-/* Footer action bar */
-.biz-card-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  border-top: 2.5px solid #0a0a0a;
-  background: #fffdf5;
-}
-
-.biz-card-action-group {
-  display: flex;
-  gap: 0.35rem;
-  align-items: center;
-}
-
-.biz-card-footer .btn {
-  white-space: nowrap;
-  justify-content: center;
 }
 
 /* ── Analytics ───────────────────────────────────────────────────────────── */
@@ -1304,27 +1128,6 @@ input:checked + .slider:before { transform: translateX(22px); }
   .mobile-bottom-bar { display: flex !important; }
   .hide-xs { display: none; }
   .admin-user-email { display: none; }
-  .biz-card-body { padding: 0.875rem; }
-  .biz-card-footer {
-    padding: 0.75rem 0.875rem;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 0.5rem;
-  }
-  .biz-card-footer .copy-slug-btn { width: 100%; }
-  .biz-card-action-group {
-    display: grid;
-    grid-template-columns: 1fr 1fr auto;
-    gap: 0.5rem;
-    width: 100%;
-  }
-  .biz-card-action-group .btn { width: 100%; }
-  .biz-card-owner-row { flex-wrap: wrap; }
-  .biz-card-created-date {
-    width: 100%;
-    margin-left: 0;
-    padding-left: calc(22px + 0.5rem);
-  }
   .modal-backdrop {
     padding: 0;
     align-items: flex-end;
@@ -1346,6 +1149,249 @@ input:checked + .slider:before { transform: translateX(22px); }
 }
 </style>
 
+<style is:global>
+/* ── Business cards ──────────────────────────────────────────────────────────
+   These cards are rendered by JavaScript, so Astro's scoped styles never match
+   them. Keep all card styling global. */
+.biz-card-item {
+  background: #ffffff;
+  border: 3px solid #0a0a0a;
+  border-top: 6px solid var(--card-brand, #1d4ed8);
+  border-radius: 8px;
+  box-shadow: 6px 6px 0 #0a0a0a;
+  padding: 0;
+  transition: transform 0.12s, box-shadow 0.12s;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  height: 100%;
+}
+
+.biz-card-item:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0 #0a0a0a;
+}
+
+.biz-card-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  flex: 1;
+}
+
+.biz-card-top {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.biz-card-logo {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2.5px solid #0a0a0a;
+  background: #f0ede4;
+}
+
+.biz-card-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.biz-card-name {
+  font-size: 0.9375rem;
+  font-weight: 800;
+  color: #0a0a0a;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  letter-spacing: -0.01em;
+}
+
+.biz-card-short-link {
+  font-size: 0.7rem;
+  color: #15803d;
+  font-family: monospace;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.biz-card-status {
+  flex-shrink: 0;
+  font-size: 0.6rem !important;
+  padding: 0.15rem 0.5rem !important;
+}
+
+.biz-card-owner-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.625rem;
+  background: #fffdf5;
+  border: 2px solid #0a0a0a;
+  border-radius: 6px;
+  min-width: 0;
+}
+
+.biz-card-owner-avatar {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  border-radius: 50%;
+  background: #f5c518;
+  border: 1.5px solid #0a0a0a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0a0a0a;
+  font-size: 0.625rem;
+  font-weight: 800;
+}
+
+.biz-card-owner-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.biz-card-owner-label {
+  font-size: 0.575rem;
+  color: #767676;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 0.1rem;
+}
+
+.biz-card-owner-email {
+  font-size: 0.72rem;
+  color: #1d4ed8;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+.biz-card-created-date {
+  font-size: 0.65rem;
+  color: #767676;
+  flex-shrink: 0;
+  white-space: nowrap;
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.biz-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 3px solid #0a0a0a;
+  background: #fffdf5;
+}
+
+.biz-card-action-group {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.biz-card-footer .btn {
+  white-space: nowrap;
+  justify-content: center;
+}
+
+@media (hover: none) {
+  .biz-card-item:hover { transform: none; }
+}
+
+@media (max-width: 639px) {
+  .biz-card-item {
+    /* Smaller offset shadow so it cannot overflow narrow screens. */
+    box-shadow: 4px 4px 0 #0a0a0a;
+  }
+
+  .biz-card-item:hover {
+    transform: none;
+    box-shadow: 4px 4px 0 #0a0a0a;
+  }
+
+  .biz-card-body {
+    padding: 0.875rem;
+    gap: 0.55rem;
+  }
+
+  .biz-card-top {
+    align-items: flex-start;
+    gap: 0.55rem;
+  }
+
+  .biz-card-logo {
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+  }
+
+  .biz-card-status {
+    font-size: 0.55rem !important;
+    padding: 0.12rem 0.4rem !important;
+  }
+
+  .biz-card-owner-row { flex-wrap: wrap; }
+
+  .biz-card-created-date {
+    width: 100%;
+    margin-left: 0;
+    padding-left: calc(22px + 0.5rem);
+  }
+
+  .biz-card-footer {
+    padding: 0.75rem 0.875rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .biz-card-footer .copy-slug-btn { width: 100%; }
+
+  .biz-card-action-group {
+    display: grid;
+    grid-template-columns: 1fr 1fr auto;
+    gap: 0.5rem;
+    width: 100%;
+  }
+
+  .biz-card-action-group .btn { width: 100%; }
+}
+
+@media (max-width: 380px) {
+  .biz-card-action-group {
+    grid-template-columns: 1fr 1fr;
+  }
+  .biz-card-action-group .delete-biz-btn {
+    grid-column: 1 / -1;
+  }
+}
+</style>
+
 <script>
   import { DatabaseService, getSupabaseConfig, supabase } from '../../lib/supabase';
   import { qrDestinationUrl, shortLinkUrl } from '../../lib/short-links';
@@ -1358,6 +1404,35 @@ input:checked + .slider:before { transform: translateX(22px); }
   let selectedBizForQr: Business | null = null;
   let activeTabName = 'businessesTab';
   const RESERVED_SLUGS = new Set(['s', 'admin', 'login', '404']);
+
+  const DEFAULT_LOGO_URL = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop&q=80';
+  const DEFAULT_COUNTRY_CODE = '91';
+  const DEFAULT_WA_GREETING = 'Hi';
+  const INSTAGRAM_BASE = 'https://instagram.com';
+  const FACEBOOK_BASE = 'https://facebook.com';
+
+  // Prefix Indian numbers with 91; treat the bare default prefix as empty.
+  function normalizePhone(value: string): string {
+    const digits = value.replace(/\D/g, '');
+    if (!digits || digits === DEFAULT_COUNTRY_CODE) return '';
+    if (digits.length === 10) return `${DEFAULT_COUNTRY_CODE}${digits}`;
+    if (digits.length === 11 && digits.startsWith('0')) return `${DEFAULT_COUNTRY_CODE}${digits.slice(1)}`;
+    return digits;
+  }
+
+  // Accept a bare username (@handle or handle) and expand it to a full profile URL.
+  function normalizeSocialHandle(value: string, base: string): string {
+    const raw = value.trim().replace(/^@+/, '');
+    if (!raw) return '';
+    if (/^https?:\/\//i.test(raw)) return raw;
+    return `${base}/${raw.replace(/^\/+/, '')}`;
+  }
+
+  // Show just the username in the edit form, not the full profile URL.
+  function socialHandleFromUrl(value: string | undefined, domain: RegExp): string {
+    if (!value) return '';
+    return value.replace(domain, '').replace(/^@+/, '').replace(/\/+$/, '');
+  }
 
   function qrUrlFor(biz: Business): string {
     return qrDestinationUrl(window.location.origin, biz.short_code, biz.slug);
@@ -1675,14 +1750,14 @@ input:checked + .slider:before { transform: translateX(22px); }
     formBizId.value = '';
     formName.value = '';
     formSlug.value = '';
-    formLogoUrl.value = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop&q=80';
+    formLogoUrl.value = '';
     formBrandColor.value = '#2563eb';
     formBrandColorText.value = '#2563eb';
     formTagline.value = '';
     formGoogleUrl.value = '';
-    formWaNumber.value = '';
-    formWaMessage.value = 'Hi! I visited your counter and would like to chat.';
-    formPhone.value = '';
+    formWaNumber.value = DEFAULT_COUNTRY_CODE;
+    formWaMessage.value = DEFAULT_WA_GREETING;
+    formPhone.value = DEFAULT_COUNTRY_CODE;
     formInsta.value = '';
     formFb.value = '';
     formCustomMsg.value = 'Thank you for visiting! Your Google review helps our local team grow.';
@@ -1715,11 +1790,11 @@ input:checked + .slider:before { transform: translateX(22px); }
     formBrandColorText.value = biz.brand_color || '#2563eb';
     formTagline.value        = biz.tagline || '';
     formGoogleUrl.value      = biz.google_review_url || '';
-    formWaNumber.value       = biz.whatsapp_number || '';
-    formWaMessage.value      = biz.whatsapp_message || '';
-    formPhone.value          = biz.phone_number || '';
-    formInsta.value          = biz.instagram_url || '';
-    formFb.value             = biz.facebook_url || '';
+    formWaNumber.value       = biz.whatsapp_number || DEFAULT_COUNTRY_CODE;
+    formWaMessage.value      = biz.whatsapp_message || DEFAULT_WA_GREETING;
+    formPhone.value          = biz.phone_number || DEFAULT_COUNTRY_CODE;
+    formInsta.value          = socialHandleFromUrl(biz.instagram_url, /^https?:\/\/(www\.)?instagram\.com\/?/i);
+    formFb.value             = socialHandleFromUrl(biz.facebook_url, /^https?:\/\/(www\.)?facebook\.com\/?/i);
     formCustomMsg.value      = biz.custom_message || '';
     formIsActive.checked     = biz.is_active;
 
@@ -1780,11 +1855,11 @@ input:checked + .slider:before { transform: translateX(22px); }
     const col     = formBrandColor.value || '#2563eb';
     const name    = formName.value || 'Business Name';
     const tagline = formTagline.value || 'Tagline appears here';
-    const logo    = formLogoUrl.value || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop&q=80';
+    const logo    = formLogoUrl.value || DEFAULT_LOGO_URL;
     if (prevImg)     prevImg.src          = logo;
     if (prevName)    prevName.textContent = name;
     if (prevTagline) prevTagline.textContent = tagline;
-    if (prevWa)      prevWa.style.display = formWaNumber.value ? 'block' : 'none';
+    if (prevWa)      prevWa.style.display = normalizePhone(formWaNumber.value) ? 'block' : 'none';
     if (prevMsg)     prevMsg.textContent  = formCustomMsg.value || '';
     document.getElementById('livePhoneMockup')?.style.setProperty('--brand', col);
   }
@@ -1801,15 +1876,15 @@ input:checked + .slider:before { transform: translateX(22px); }
     const payload: Partial<Business> & { name: string; slug: string } = {
       id, name, slug,
       short_code:       id ? undefined : formReuseShortCode?.value || undefined,
-      logo_url:         formLogoUrl.value.trim(),
+      logo_url:         formLogoUrl.value.trim() || DEFAULT_LOGO_URL,
       brand_color:      formBrandColor.value,
       tagline:          formTagline.value.trim(),
       google_review_url:formGoogleUrl.value.trim(),
-      whatsapp_number:  formWaNumber.value.trim(),
-      whatsapp_message: formWaMessage.value.trim(),
-      phone_number:     formPhone.value.trim(),
-      instagram_url:    formInsta.value.trim(),
-      facebook_url:     formFb.value.trim(),
+      whatsapp_number:  normalizePhone(formWaNumber.value),
+      whatsapp_message: formWaMessage.value.trim() || DEFAULT_WA_GREETING,
+      phone_number:     normalizePhone(formPhone.value),
+      instagram_url:    normalizeSocialHandle(formInsta.value, INSTAGRAM_BASE),
+      facebook_url:     normalizeSocialHandle(formFb.value, FACEBOOK_BASE),
       custom_message:   formCustomMsg.value.trim(),
       is_active:        formIsActive.checked,
     };

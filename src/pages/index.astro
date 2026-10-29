@@ -55,21 +55,23 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
         />
       </div>
 
-      <!-- Verified Badge -->
-      <div>
-        <span class="verified-pill">
-          <Icon name="shield-check" size={13} fill="#60a5fa" />
-          <span>Verified Platform Hub</span>
-        </span>
-      </div>
-
       <!-- Business Name & Tagline -->
       <h1 class="biz-title" id="bizTitle">{business?.name || 'ReviewHub'}</h1>
       <p class="biz-tagline" id="bizTagline">{business?.tagline || 'Smart QR Counter Cards for Google Reviews'}</p>
 
-      <!-- 5-Star Experience Rating Bar -->
+      <!-- 5-Star Experience Rating Bar (Google review CTA) -->
       <div class="rating-prompt-card">
-        <div class="rating-prompt-title">How was your experience today?</div>
+        <a
+          id="googleCtaBtn"
+          href={business?.google_review_url || 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4'}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="rating-prompt-title"
+          style="display: flex; align-items: center; justify-content: center; gap: 0.45rem; text-decoration: none;"
+        >
+          <Icon name="google" size={18} />
+          <span>How was your experience today?</span>
+        </a>
         <div class="stars-row" id="starsRow" title="Tap 5 stars to leave a review on Google">
           <button type="button" class="star-btn" data-rating="1" aria-label="Rate 1 star">★</button>
           <button type="button" class="star-btn" data-rating="2" aria-label="Rate 2 stars">★</button>
@@ -78,24 +80,6 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
           <button type="button" class="star-btn" data-rating="5" aria-label="Rate 5 stars">★</button>
         </div>
       </div>
-
-      <!-- Primary CTA: Rate us on Google -->
-      <a
-        id="googleCtaBtn"
-        href={business?.google_review_url || 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4'}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="btn-primary-google"
-      >
-        <Icon name="google" size={24} />
-        <div style="text-align: left; flex: 1;">
-          <div style="font-size: 1.0625rem; font-weight: 700; line-height: 1.2; color: #0a0a0a;">Rate us on Google</div>
-          <div style="font-size: 0.75rem; color: #4a4a4a; font-weight: 600;">Takes 10 seconds · Direct link</div>
-        </div>
-        <div class="stars-badge-mini">
-          <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
-        </div>
-      </a>
 
       <!-- Secondary CTA: WhatsApp (Optional) -->
       <a
@@ -146,23 +130,10 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
         {business?.custom_message || 'Turn counter scans into 5-star Google reviews in seconds. Update destinations anytime without reprinting physical QR stands!'}
       </div>
 
-      <!-- Quick Links: Admin & Live Demo Stand -->
-      <div style="margin-top: 1.5rem; padding-top: 1.25rem; border-top: 2.5px solid #0a0a0a; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
-        <a href="/admin" class="btn btn-outline btn-sm" style="font-size: 0.75rem;">
-          <Icon name="settings" size={14} />
-          <span>Admin Portal</span>
-        </a>
-        <a href="/artisan-cafe" class="btn btn-outline btn-sm" style="font-size: 0.75rem;">
-          <Icon name="sparkles" size={14} />
-          <span>Demo Businesses</span>
-        </a>
-      </div>
-
       <!-- Reusable QR Powered by ReviewHub Footer -->
       <div class="counter-footer">
         <span>Powered by</span>
         <a href="/">ReviewHub</a>
-        <span>· Reusable Counter Stand</span>
       </div>
     </div>
 
@@ -176,8 +147,8 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
         <p style="font-size: 0.875rem; color: #4a4a4a; line-height: 1.5; margin-bottom: 1.5rem;">
           This business card is currently paused or undergoing updates by the administrator.
         </p>
-        <a href="/admin" class="btn btn-primary btn-sm">
-          Open Admin Portal
+        <a href="/" class="btn btn-secondary btn-sm">
+          Return to ReviewHub Home
         </a>
       </div>
     </div>
@@ -253,10 +224,9 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
       googleCtaBtn.href = biz.google_review_url;
     }
 
+    const waMessage = biz.whatsapp_message || 'Hi';
     const waUrl = biz.whatsapp_number
-      ? `https://wa.me/${biz.whatsapp_number.replace(/\D/g, '')}${
-          biz.whatsapp_message ? `?text=${encodeURIComponent(biz.whatsapp_message)}` : ''
-        }`
+      ? `https://wa.me/${biz.whatsapp_number.replace(/\D/g, '')}?text=${encodeURIComponent(waMessage)}`
       : '#';
 
     if (whatsappCtaBtn) {
