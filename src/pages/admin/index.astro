@@ -498,6 +498,7 @@ import Icon from '../../components/Icon.astro';
         <div style="padding:1.5rem;">
           <p style="font-size:.875rem;color:var(--text-muted);line-height:1.5;margin-bottom:1.25rem;">
             Paste this SQL directly into your <strong>Supabase SQL Editor</strong> to create all tables, indexes, and Row Level Security policies.
+            It is safe to re-run, and it fixes admins not seeing businesses created by another admin.
           </p>
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
             <span style="font-size:.8125rem;font-weight:600;color:#d1d5db;">supabase/schema.sql</span>
@@ -564,13 +565,23 @@ ALTER TABLE public.businesses ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.short_links ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public can view businesses by slug" ON public.businesses;
 CREATE POLICY "Public can view businesses by slug" ON public.businesses FOR SELECT TO anon, authenticated USING (true);
+
+-- Shared admin workspace: any signed-in admin sees/manages every business,
+-- not just the rows they created.
+DROP POLICY IF EXISTS "Admins manage businesses" ON public.businesses;
 CREATE POLICY "Admins manage businesses" ON public.businesses FOR ALL TO authenticated
-  USING (auth.uid() = user_id OR user_id IS NULL)
-  WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+  USING (true)
+  WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public can log analytics" ON public.analytics_events;
 CREATE POLICY "Public can log analytics" ON public.analytics_events FOR INSERT WITH CHECK (true);
+DROP POLICY IF EXISTS "Admins can view analytics" ON public.analytics_events;
 CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "Public can resolve short links" ON public.short_links;
 CREATE POLICY "Public can resolve short links" ON public.short_links FOR SELECT TO anon, authenticated USING (true);
+DROP POLICY IF EXISTS "Admins manage short links" ON public.short_links;
 CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authenticated USING (true) WITH CHECK (true);
           </textarea>
           <div style="margin-top:1.25rem;padding:1rem;background:#fffdf5;border-radius:6px;border:2.5px solid #0a0a0a;box-shadow:3px 3px 0 #0a0a0a;">
@@ -1948,11 +1959,17 @@ input:checked + .slider:before { transform: translateX(22px); }
     );
 
     if (filtered.length === 0) {
+      const hint = q
+        ? ''
+        : `<p style="font-size:.8rem;margin-top:.75rem;color:#767676;font-weight:500;max-width:34rem;margin-left:auto;margin-right:auto;">
+             Missing a business another admin created? Open <strong>SQL</strong> in the top bar and run the policies once — they open the workspace to every signed-in admin.
+           </p>`;
       businessListContainer.innerHTML = `
         <div style="grid-column:1/-1;text-align:center;padding:4rem 1rem;color:#4a4a4a;">
           <div style="font-size:2.5rem;margin-bottom:.5rem;">🏢</div>
           <div style="font-size:1rem;font-weight:800;color:#0a0a0a;">No businesses found</div>
           <p style="font-size:.875rem;margin-top:.25rem;font-weight:500;">Try adjusting your search or add a new business.</p>
+          ${hint}
         </div>`;
       return;
     }

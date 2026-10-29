@@ -83,10 +83,12 @@ ALTER TABLE public.short_links ENABLE ROW LEVEL SECURITY;
 
 -- Drop old policies if recreating
 DROP POLICY IF EXISTS "Public can view active businesses" ON public.businesses;
+DROP POLICY IF EXISTS "Public can view businesses by slug" ON public.businesses;
 DROP POLICY IF EXISTS "Admins can view all their businesses" ON public.businesses;
 DROP POLICY IF EXISTS "Admins can insert businesses" ON public.businesses;
 DROP POLICY IF EXISTS "Admins can update their businesses" ON public.businesses;
 DROP POLICY IF EXISTS "Admins can delete their businesses" ON public.businesses;
+DROP POLICY IF EXISTS "Admins manage businesses" ON public.businesses;
 DROP POLICY IF EXISTS "Service role full access on businesses" ON public.businesses;
 
 -- Allow public read access to businesses (needed for customer QR scan landing page)
@@ -96,13 +98,14 @@ CREATE POLICY "Public can view businesses by slug"
     TO anon, authenticated
     USING (true);
 
--- Allow authenticated users to manage businesses
+-- The Admin Portal is a shared workspace: every signed-in admin can see and
+-- manage every business, including ones created by another admin.
 CREATE POLICY "Admins manage businesses"
     ON public.businesses
     FOR ALL
     TO authenticated
-    USING (auth.uid() = user_id OR user_id IS NULL)
-    WITH CHECK (auth.uid() = user_id OR user_id IS NULL);
+    USING (true)
+    WITH CHECK (true);
 
 -- Allow service role full access
 CREATE POLICY "Service role full access on businesses"

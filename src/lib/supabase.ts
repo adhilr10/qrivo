@@ -33,9 +33,26 @@ export const supabase: SupabaseClient | null = config.isConfigured
   ? createClient(config.url, config.anonKey)
   : null;
 
+/**
+ * Sessionless client for public reads (counter pages, the admin business list).
+ * Business rows are public data, so reads must not inherit the signed-in
+ * admin's row-level security scope — otherwise an admin only sees the rows
+ * they personally created.
+ */
+const supabasePublic: SupabaseClient | null = config.isConfigured
+  ? createClient(config.url, config.anonKey, {
+      auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    })
+  : null;
+
 function requireSupabase(): SupabaseClient {
   if (!supabase) throw new SupabaseConfigurationError();
   return supabase;
+}
+
+function requirePublicSupabase(): SupabaseClient {
+  if (!supabasePublic) throw new SupabaseConfigurationError();
+  return supabasePublic;
 }
 
 async function requireAuthenticatedUserId(): Promise<string> {
@@ -96,7 +113,8 @@ export const DatabaseService = {
   },
 
   async getBusinesses(): Promise<Business[]> {
-    const database = requireSupabase();
+    // Public read: every admin must see the full shared workspace.
+    const database = requirePublicSupabase();
     let { data, error } = await database
       .from('businesses')
       .select('*, short_links(code)')
@@ -113,7 +131,8 @@ export const DatabaseService = {
   },
 
   async getBusinessBySlug(slug: string): Promise<Business | null> {
-    const database = requireSupabase();
+    // Public read: a signed-in admin must resolve the same row a visitor sees.
+    const database = requirePublicSupabase();
     let { data, error } = await database
       .from('businesses')
       .select('*, short_links(code)')
@@ -131,7 +150,8 @@ export const DatabaseService = {
   },
 
   async getShortLink(code: string): Promise<(ShortLink & { business: Business | null }) | null> {
-    const { data, error } = await requireSupabase()
+    // Public read: scanned counter codes resolve identically for everyone.
+    const { data, error } = await requirePublicSupabase()
       .from('short_links')
       .select('*, businesses(*)')
       .eq('code', code.toLowerCase())
@@ -257,12 +277,13 @@ export const DatabaseService = {
       facebook_url: business.facebook_url || '',
       custom_message: business.custom_message || '',
       is_active: business.is_active ?? true,
-      user_id: userId,
       updated_at: new Date().toISOString(),
     };
-    // Capture the creator's email only when creating a new business
-    if (isNew && userEmail) {
-      values.owner_email = userEmail;
+    // Ownership is captured once, at creation time. Editing a business that
+    // another admin created must not silently reassign it.
+    if (isNew) {
+      values.user_id = userId;
+      if (userEmail) values.owner_email = userEmail;
     }
 
     const query = business.id
@@ -295,7 +316,17 @@ export const DatabaseService = {
       }
     }
 
-    if (error) throw error;
+    if (error) {
+      // PostgREST reports "no rows" when row-level security hides this business
+      // from the current admin, which reads like a silent failure. Explain it.
+      if (error.code === 'PGRST116') {
+        throw new Error(
+          'Supabase blocked this change because another admin created this business. ' +
+            'Open SQL in the Admin Portal and run the shared-admin policies so every signed-in admin can edit any business.',
+        );
+      }
+      throw error;
+    }
     const saved = data as Business;
     try {
       const shortCode = await this.ensureShortLink(
@@ -323,8 +354,19 @@ export const DatabaseService = {
         .eq('code', existing.data.code);
     }
 
-    const { error } = await database.from('businesses').delete().eq('id', id);
+    const { data: deleted, error } = await database
+      .from('businesses')
+      .delete()
+      .eq('id', id)
+      .select('id');
+
     if (error) throw error;
+    if (!deleted || deleted.length === 0) {
+      throw new Error(
+        'Supabase blocked this delete because another admin created this business. ' +
+          'Open SQL in the Admin Portal and run the shared-admin policies so every signed-in admin can manage any business.',
+      );
+    }
     return true;
   },
 
