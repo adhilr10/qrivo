@@ -1,5 +1,5 @@
 -- ==============================================================================
--- ReviewHub Database Schema for Supabase
+-- Qrivo Database Schema for Supabase
 -- Production-Ready Migration
 -- ==============================================================================
 

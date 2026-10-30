@@ -6,11 +6,11 @@ import type { Business } from '../types';
  */
 export const DEMO_BUSINESSES: Business[] = [
   {
-    id: 'demo-review-hub', name: 'ReviewHub', slug: 'review-hub', short_code: 'rhdemo',
-    logo_url: '/review-hub-logo.svg', brand_color: '#6366f1',
+    id: 'demo-qrivo', name: 'Qrivo', slug: 'qrivo', short_code: 'qrdemo',
+    logo_url: '/qrivo-logo.svg', brand_color: '#6366f1',
     tagline: 'Smart QR Counter Cards for Google Reviews & Instant Connections', google_review_url: 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4',
-    whatsapp_number: '+15550192834', whatsapp_message: 'Hi ReviewHub! I would like to get smart QR counter cards for my business.', phone_number: '+15550192834',
-    instagram_url: 'https://instagram.com/reviewhubapp', facebook_url: 'https://facebook.com/reviewhubapp',
+    whatsapp_number: '+15550192834', whatsapp_message: 'Hi Qrivo! I would like to get smart QR counter cards for my business.', phone_number: '+15550192834',
+    instagram_url: 'https://instagram.com/qrivoapp', facebook_url: 'https://facebook.com/qrivoapp',
     custom_message: 'Turn counter scans into 5-star Google reviews in seconds. Update destinations anytime without reprinting physical QR stands!',
     is_active: true, created_at: '2026-01-01T00:00:00.000Z',
   },

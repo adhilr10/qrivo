@@ -39,7 +39,7 @@ const { initialBusiness } = Astro.props as Props;
 // Prerendered markup is immediately refreshed from Supabase in the browser.
 const business = initialBusiness || DEMO_BUSINESSES.find((b) => b.slug === slug);
 const brandColor = business?.brand_color || '#2563eb';
-const pageTitle = business ? `${business.name} | Review on Google` : 'ReviewHub Counter Card';
+const pageTitle = business ? `${business.name} | Review on Google` : 'Qrivo Counter Card';
 ---
 
 <Layout title={pageTitle} brandColor={brandColor} hideNav={true}>
@@ -134,10 +134,10 @@ const pageTitle = business ? `${business.name} | Review on Google` : 'ReviewHub 
         {business?.custom_message || 'Thank you for supporting our local business! Your review means everything to our team.'}
       </div>
 
-      <!-- Reusable QR Powered by ReviewHub Footer -->
+      <!-- Reusable QR Powered by Qrivo Footer -->
       <div class="counter-footer">
         <span>Powered by</span>
-        <a href="/" target="_blank">ReviewHub</a>
+        <a href="/" target="_blank">Qrivo</a>
       </div>
     </div>
 
@@ -153,7 +153,7 @@ const pageTitle = business ? `${business.name} | Review on Google` : 'ReviewHub 
           The physical QR code remains valid and will automatically reconnect once updated.
         </p>
         <a href="/" class="btn btn-secondary btn-sm">
-          Return to ReviewHub Home
+          Return to Qrivo Home
         </a>
       </div>
     </div>

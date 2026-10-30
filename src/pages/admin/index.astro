@@ -3,7 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import Icon from '../../components/Icon.astro';
 ---
 
-<Layout title="ReviewHub Admin | Manage Businesses & Counter QR Codes" hideNav={false}>
+<Layout title="Qrivo Admin | Manage Businesses & Counter QR Codes" hideNav={false}>
   <div class="admin-page-container">
 
     <!-- ======================================================================
@@ -621,7 +621,7 @@ import Icon from '../../components/Icon.astro';
               <span id="copySqlBtnText">Copy SQL</span>
             </button>
           </div>
-          <textarea id="sqlCodeTextarea" readonly rows="12" class="sql-textarea">-- ReviewHub Supabase Schema
+          <textarea id="sqlCodeTextarea" readonly rows="12" class="sql-textarea">-- Qrivo Supabase Schema
 -- Run this in your Supabase project's SQL editor
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -723,8 +723,8 @@ CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authe
         <div style="font-size:1.25rem;font-weight:800;color:#000;margin-bottom:.5rem;">RATE US ON GOOGLE</div>
         <p style="font-size:.875rem;color:#4b5563;margin-bottom:1.5rem;">Point your phone camera at the QR code below</p>
         <div id="printCardQrBox" style="display:flex;justify-content:center;margin-bottom:1.5rem;"></div>
-        <div style="font-size:.75rem;color:#6b7280;font-family:monospace;" id="printCardUrl">https://reviewhub.example.com/s/xxxxxx</div>
-        <div style="margin-top:1.5rem;font-size:.75rem;color:#767676;border-top:2px solid #0a0a0a;padding-top:.75rem;font-weight:600;">ReviewHub Counter Display Stand · Place at register / checkout</div>
+        <div style="font-size:.75rem;color:#6b7280;font-family:monospace;" id="printCardUrl">https://qrivo.example.com/s/xxxxxx</div>
+        <div style="margin-top:1.5rem;font-size:.75rem;color:#767676;border-top:2px solid #0a0a0a;padding-top:.75rem;font-weight:600;">Qrivo Counter Display Stand · Place at register / checkout</div>
       </div>
     </div>
 
@@ -3044,7 +3044,7 @@ input:checked + .slider:before { transform: translateX(22px); }
         errorCorrectionLevel: 'M',
       });
       const a = document.createElement('a');
-      a.download = `reviewhub-qr-${selectedBizForQr.short_code || selectedBizForQr.slug}.png`;
+      a.download = `qrivo-qr-${selectedBizForQr.short_code || selectedBizForQr.slug}.png`;
       a.href = dataUrl as string;
       a.click();
     } catch (err) {
@@ -3064,7 +3064,7 @@ input:checked + .slider:before { transform: translateX(22px); }
         errorCorrectionLevel: 'M',
       });
       const a = document.createElement('a');
-      a.download = `reviewhub-qr-${selectedBizForQr.short_code || selectedBizForQr.slug}.svg`;
+      a.download = `qrivo-qr-${selectedBizForQr.short_code || selectedBizForQr.slug}.svg`;
       a.href = URL.createObjectURL(new Blob([svgString], { type: 'image/svg+xml' }));
       a.click();
     } catch (err) {
@@ -3192,7 +3192,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     if (links.length === 0) return;
 
     const fallback = `batch-${new Date().toISOString().slice(0, 10)}`;
-    const zipName = `reviewhub-qr-${sanitizeFilePart(batchLabel, fallback)}`;
+    const zipName = `qrivo-qr-${sanitizeFilePart(batchLabel, fallback)}`;
     const originalHtml = button?.innerHTML;
     if (button) button.setAttribute('disabled', 'true');
 
@@ -3223,7 +3223,7 @@ input:checked + .slider:before { transform: translateX(22px); }
       folder.file(
         'README.txt',
         [
-          'ReviewHub QR stands',
+          'Qrivo QR stands',
           `Batch: ${batchLabel || 'unlabeled'}`,
           `Codes: ${links.length}`,
           '',
@@ -3271,7 +3271,7 @@ input:checked + .slider:before { transform: translateX(22px); }
         errorCorrectionLevel: 'M',
       });
       const a = document.createElement('a');
-      a.download = `reviewhub-qr-${code}.png`;
+      a.download = `qrivo-qr-${code}.png`;
       a.href = dataUrl as string;
       a.click();
     } catch (err) {
@@ -3473,7 +3473,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     if (scanBusy) return;
     const code = extractShortCode(text);
     if (!code) {
-      setScanStatus('That QR is not a ReviewHub stand. Try another.');
+      setScanStatus('That QR is not a Qrivo stand. Try another.');
       return;
     }
     scanBusy = true;
@@ -3561,7 +3561,7 @@ input:checked + .slider:before { transform: translateX(22px); }
   qrScanManualBtn?.addEventListener('click', () => {
     const code = extractShortCode(qrScanManualInput?.value || '');
     if (!code) {
-      setScanStatus('That is not a ReviewHub code. Try something like /s/abc123.');
+      setScanStatus('That is not a Qrivo code. Try something like /s/abc123.');
       return;
     }
     void showScanResult(code);

@@ -67,7 +67,7 @@ export const POST: APIRoute = async ({ request }) => {
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
-        'User-Agent': 'ReviewHub/1.0 (+admin review-link lookup)',
+        'User-Agent': 'Qrivo/1.0 (+admin review-link lookup)',
       },
       body: JSON.stringify({ maps_url: mapsUrl }),
       signal: AbortSignal.timeout(TIMEOUT_MS),

@@ -1,7 +1,7 @@
-# ReviewHub 🚀
+# Qrivo 🚀
 ### Smart Reusable Counter QR Cards for Google Reviews & Multi-Channel Customer Engagement
 
-**ReviewHub** is a production-ready web application built with **Astro** and **Supabase** designed for physical counter checkouts (cafes, dental clinics, auto repair shops, salons, retail, restaurants).
+**Qrivo** is a production-ready web application built with **Astro** and **Supabase** designed for physical counter checkouts (cafes, dental clinics, auto repair shops, salons, retail, restaurants).
 
 A business places a QR code stand or sticker at its counter. When a customer scans it with their smartphone, they land on a fast, mobile-first branded page where they can:
 1. **Leave a 5-star Google review with one tap**.
@@ -14,7 +14,7 @@ A business places a QR code stand or sticker at its counter. When a customer sca
 
 A physical QR code printed on acrylic stands or counter cards **must not point directly to Google**. It encodes a permanent short link:
 ```
-https://reviewhub.example.com/s/[code]
+https://qrivo.example.com/s/[code]
 ```
 
 That shortener always stays the same. It redirects to the current business landing page (`/[slug]`), which can change if a business is rejected and replaced.
@@ -22,7 +22,7 @@ That shortener always stays the same. It redirects to the current business landi
 ### Why this matters:
 * **Zero Reprinting Costs**: If the business changes owners, updates its phone number, switches WhatsApp lines, or replaces its Google Place ID, the admin simply edits the destination links in the Admin Portal. The printed QR code on the counter continues working seamlessly!
 * **Reject without reprinting**: If a business rejects or cancels, delete it in Admin. The `/s/[code]` short link stays unassigned. Create the next business and reuse that short link — the physical QR stand keeps working.
-* **Anonymous Conversion Tracking**: Physical cards cannot track impressions. ReviewHub tracks every page view, Google review tap, WhatsApp inquiry, and call click in real time.
+* **Anonymous Conversion Tracking**: Physical cards cannot track impressions. Qrivo tracks every page view, Google review tap, WhatsApp inquiry, and call click in real time.
 
 ---
 
@@ -94,7 +94,7 @@ npm run build
 
 ## 🗄 Supabase Setup
 
-ReviewHub stores businesses and analytics exclusively in Supabase. The three demo cards are pre-rendered examples; run the included SQL migration to create the matching database records.
+Qrivo stores businesses and analytics exclusively in Supabase. The three demo cards are pre-rendered examples; run the included SQL migration to create the matching database records.
 
 To connect your own cloud Supabase database:
 1. Create a project at [supabase.com](https://supabase.com).
@@ -104,7 +104,7 @@ To connect your own cloud Supabase database:
 PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 ```
-4. Restart your Astro server. ReviewHub will display **"Supabase Connected"** in the Admin Portal.
+4. Restart your Astro server. Qrivo will display **"Supabase Connected"** in the Admin Portal.
 
 Business creation, editing, deletion, and analytics access follow the Row Level Security policies in the migration. Sign in an administrator before using those admin-only operations.
 

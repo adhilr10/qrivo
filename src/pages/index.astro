@@ -5,19 +5,19 @@ import { DEMO_BUSINESSES } from '../lib/demo-businesses';
 import { DatabaseService } from '../lib/supabase';
 import type { Business } from '../types';
 
-let business: Business = DEMO_BUSINESSES.find((b) => b.slug === 'review-hub') || {
-  id: 'demo-review-hub',
-  name: 'ReviewHub',
-  slug: 'review-hub',
-  logo_url: '/review-hub-logo.svg',
+let business: Business = DEMO_BUSINESSES.find((b) => b.slug === 'qrivo') || {
+  id: 'demo-qrivo',
+  name: 'Qrivo',
+  slug: 'qrivo',
+  logo_url: '/qrivo-logo.svg',
   brand_color: '#6366f1',
   tagline: 'Smart QR Counter Cards for Google Reviews & Instant Connections',
   google_review_url: 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4',
   whatsapp_number: '+15550192834',
-  whatsapp_message: 'Hi ReviewHub! I would like to get smart QR counter cards for my business.',
+  whatsapp_message: 'Hi Qrivo! I would like to get smart QR counter cards for my business.',
   phone_number: '+15550192834',
-  instagram_url: 'https://instagram.com/reviewhubapp',
-  facebook_url: 'https://facebook.com/reviewhubapp',
+  instagram_url: 'https://instagram.com/qrivoapp',
+  facebook_url: 'https://facebook.com/qrivoapp',
   custom_message: 'Turn counter scans into 5-star Google reviews in seconds. Update destinations anytime without reprinting physical QR stands!',
   is_active: true,
   created_at: new Date().toISOString(),
@@ -25,13 +25,13 @@ let business: Business = DEMO_BUSINESSES.find((b) => b.slug === 'review-hub') ||
 
 try {
   if (DatabaseService.isConfigured()) {
-    const fromDb = await DatabaseService.getBusinessBySlug('review-hub');
+    const fromDb = await DatabaseService.getBusinessBySlug('qrivo');
     if (fromDb) {
       business = fromDb;
     }
   }
 } catch (e) {
-  // Use default ReviewHub configuration if Supabase is unavailable during build
+  // Use default Qrivo configuration if Supabase is unavailable during build
 }
 
 const brandColor = business?.brand_color || '#6366f1';
@@ -39,7 +39,7 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
 ---
 
 <Layout title={pageTitle} brandColor={brandColor} hideNav={true}>
-  <div class="counter-page-wrapper" id="counterPageWrapper" data-slug="review-hub" data-biz-id={business?.id || ''}>
+  <div class="counter-page-wrapper" id="counterPageWrapper" data-slug="qrivo" data-biz-id={business?.id || ''}>
     
     <!-- Active Business Counter View -->
     <div class="counter-card" id="activeBizCard" style={business && !business.is_active ? 'display: none;' : ''}>
@@ -48,15 +48,15 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
       <div class="biz-logo-container">
         <img
           id="bizLogoImg"
-          src={business?.logo_url || '/review-hub-logo.svg'}
-          alt={business?.name || 'ReviewHub Logo'}
+          src={business?.logo_url || '/qrivo-logo.svg'}
+          alt={business?.name || 'Qrivo Logo'}
           class="biz-logo-img"
           loading="eager"
         />
       </div>
 
       <!-- Business Name & Tagline -->
-      <h1 class="biz-title" id="bizTitle">{business?.name || 'ReviewHub'}</h1>
+      <h1 class="biz-title" id="bizTitle">{business?.name || 'Qrivo'}</h1>
       <p class="biz-tagline" id="bizTagline">{business?.tagline || 'Smart QR Counter Cards for Google Reviews'}</p>
 
       <!-- 5-Star Experience Rating Bar (Google review CTA) -->
@@ -130,10 +130,10 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
         {business?.custom_message || 'Turn counter scans into 5-star Google reviews in seconds. Update destinations anytime without reprinting physical QR stands!'}
       </div>
 
-      <!-- Reusable QR Powered by ReviewHub Footer -->
+      <!-- Reusable QR Powered by Qrivo Footer -->
       <div class="counter-footer">
         <span>Powered by</span>
-        <a href="/">ReviewHub</a>
+        <a href="/">Qrivo</a>
       </div>
     </div>
 
@@ -148,7 +148,7 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
           This business card is currently paused or undergoing updates by the administrator.
         </p>
         <a href="/" class="btn btn-secondary btn-sm">
-          Return to ReviewHub Home
+          Return to Qrivo Home
         </a>
       </div>
     </div>
@@ -160,7 +160,7 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
   import { DatabaseService } from '../lib/supabase';
   import type { Business, EventType } from '../types';
 
-  const slug = 'review-hub';
+  const slug = 'qrivo';
 
   // Elements
   const activeCard = document.getElementById('activeBizCard');
@@ -186,7 +186,7 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
     try {
       biz = await DatabaseService.getBusinessBySlug(slug);
     } catch (error) {
-      console.warn('Unable to load ReviewHub from Supabase, using defaults:', error);
+      console.warn('Unable to load Qrivo from Supabase, using defaults:', error);
     }
 
     if (!biz) {
