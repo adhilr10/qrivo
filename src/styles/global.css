@@ -660,49 +660,6 @@ input, textarea, select {
   border-radius: var(--radius-sm);
 }
 
-/* ── Stats Cards ─────────────────────────────────────────────────────────── */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-  gap: 1.125rem;
-  margin-bottom: 2rem;
-}
-
-.stat-card {
-  padding: 1.25rem;
-  background: var(--bg-card);
-  border: var(--bw) solid var(--border-main);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-hard-md);
-}
-
-.stat-card-title {
-  font-size: 0.6875rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 0.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.stat-card-value {
-  font-size: 2rem;
-  font-weight: 800;
-  color: var(--text-main);
-  letter-spacing: -0.03em;
-  line-height: 1;
-}
-
-.stat-card-change {
-  font-size: 0.6875rem;
-  color: var(--accent-green);
-  font-weight: 600;
-  margin-top: 0.35rem;
-}
-
 /* ==============================================================================
    Mobile layout
    ============================================================================== */
@@ -735,12 +692,7 @@ input, textarea, select {
     gap: 0.35rem;
   }
 
-  /* Two large buttons + the wordmark do not fit a phone; keep the admin
-     shortcut and drop the demo link instead of scrolling sideways. */
-  .site-nav-demo {
-    display: none !important;
-  }
-
+  /* Keep the wordmark and the remaining buttons on one line on phones. */
   .site-nav-inner nav .btn {
     padding: 0.4rem 0.6rem;
     font-size: 0.6875rem;

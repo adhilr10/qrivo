@@ -47,10 +47,6 @@ import Icon from '../../components/Icon.astro';
           <Icon name="shield-check" size={17} />
           <span>Businesses (<span id="bizCountBadge">0</span>)</span>
         </button>
-        <button class="tab-btn" data-tab="analyticsTab">
-          <Icon name="bar-chart" size={17} />
-          <span>Analytics</span>
-        </button>
         <button class="tab-btn" data-tab="qrStudioTab">
           <Icon name="qrcode" size={17} />
           <span>QR Codes</span>
@@ -88,62 +84,7 @@ import Icon from '../../components/Icon.astro';
         </div>
       </div>
 
-      <!-- ── TAB 2: ANALYTICS ──────────────────────────────────────────── -->
-      <div id="analyticsTab" class="tab-content" style="display:none;">
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-card-title"><span>TOTAL SCANS</span><span>📱</span></div>
-            <div class="stat-card-value" id="statTotalViews">0</div>
-            <div class="stat-card-change">Across all active counter cards</div>
-          </div>
-          <div class="stat-card" style="border-color:rgba(66,133,244,.3);">
-            <div class="stat-card-title"><span>GOOGLE REVIEWS</span><span style="color:#4285f4;">⭐</span></div>
-            <div class="stat-card-value" id="statReviewClicks" style="color:#60a5fa;">0</div>
-            <div class="stat-card-change">High-intent review clicks</div>
-          </div>
-          <div class="stat-card" style="border-color:rgba(37,211,102,.3);">
-            <div class="stat-card-title"><span>WHATSAPP</span><span style="color:#25d366;">💬</span></div>
-            <div class="stat-card-value" id="statWaClicks" style="color:#4ade80;">0</div>
-            <div class="stat-card-change">Direct customer chats</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-card-title"><span>CALLS & SOCIALS</span><span>📞</span></div>
-            <div class="stat-card-value" id="statSocialClicks">0</div>
-            <div class="stat-card-change">Calls, Instagram & Facebook</div>
-          </div>
-          <div class="stat-card" style="border-color:rgba(245,158,11,.3);">
-            <div class="stat-card-title"><span>CONVERSION RATE</span><span style="color:#fbbf24;">🎯</span></div>
-            <div class="stat-card-value" id="statAvgConversion" style="color:#fde047;">0%</div>
-            <div class="stat-card-change">Scan → Google Review</div>
-          </div>
-        </div>
-
-        <div class="glass-card table-card">
-          <h2 class="section-title">Business Conversion Breakdown</h2>
-          <div class="table-scroll">
-            <table class="analytics-table">
-              <thead>
-                <tr>
-                  <th>BUSINESS</th>
-                  <th class="text-center">VIEWS</th>
-                  <th class="text-center">REVIEWS</th>
-                  <th class="text-center">WHATSAPP</th>
-                  <th class="text-center hide-sm">CALLS/SOCIAL</th>
-                  <th class="text-center">CONVERSION</th>
-                </tr>
-              </thead>
-              <tbody id="analyticsTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <div class="glass-card table-card">
-          <h2 class="section-title">⚡ Recent Customer Interactions</h2>
-          <div id="liveActivityFeed" class="activity-feed"></div>
-        </div>
-      </div>
-
-      <!-- ── TAB 3: QR CODES (STOCK + STUDIO) ──────────────────────────── -->
+      <!-- ── TAB 2: QR CODES (STOCK + STUDIO) ──────────────────────────── -->
       <div id="qrStudioTab" class="tab-content" style="display:none;">
 
         <!-- Bulk blank stock: print first, assign to a business later -->
@@ -262,10 +203,6 @@ import Icon from '../../components/Icon.astro';
         <span class="mobile-tab-icon">🏢</span>
         <span class="mobile-tab-label">Shops</span>
         <span class="mobile-tab-badge" id="mobileBizBadge">0</span>
-      </button>
-      <button class="mobile-tab-btn" data-tab="analyticsTab">
-        <span class="mobile-tab-icon">📊</span>
-        <span class="mobile-tab-label">Analytics</span>
       </button>
       <button class="mobile-tab-btn" data-tab="qrStudioTab">
         <span class="mobile-tab-icon">⬛</span>
@@ -652,16 +589,6 @@ ALTER TABLE public.businesses
     ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     ADD COLUMN IF NOT EXISTS owner_email TEXT DEFAULT '';
 
-CREATE TABLE IF NOT EXISTS public.analytics_events (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    business_id UUID REFERENCES public.businesses(id) ON DELETE CASCADE NOT NULL,
-    slug VARCHAR(100) NOT NULL,
-    event_type VARCHAR(50) NOT NULL,
-    user_agent TEXT,
-    referrer TEXT,
-    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
-);
-
 CREATE TABLE IF NOT EXISTS public.short_links (
     code VARCHAR(12) PRIMARY KEY,
     business_id UUID REFERENCES public.businesses(id) ON DELETE SET NULL,
@@ -675,7 +602,6 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_short_links_business_id
 
 -- Row Level Security
 ALTER TABLE public.businesses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.analytics_events ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.short_links ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public can view businesses by slug" ON public.businesses;
@@ -688,10 +614,6 @@ CREATE POLICY "Admins manage businesses" ON public.businesses FOR ALL TO authent
   USING (true)
   WITH CHECK (true);
 
-DROP POLICY IF EXISTS "Public can log analytics" ON public.analytics_events;
-CREATE POLICY "Public can log analytics" ON public.analytics_events FOR INSERT WITH CHECK (true);
-DROP POLICY IF EXISTS "Admins can view analytics" ON public.analytics_events;
-CREATE POLICY "Admins can view analytics" ON public.analytics_events FOR SELECT TO authenticated USING (true);
 DROP POLICY IF EXISTS "Public can resolve short links" ON public.short_links;
 CREATE POLICY "Public can resolve short links" ON public.short_links FOR SELECT TO anon, authenticated USING (true);
 DROP POLICY IF EXISTS "Admins manage short links" ON public.short_links;
@@ -852,7 +774,7 @@ CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authe
   font-weight: 600;
 }
 
-/* ── Analytics ───────────────────────────────────────────────────────────── */
+/* ── Shared panel headings ───────────────────────────────────────────────── */
 .section-title {
   font-size: 1.0625rem;
   font-weight: 800;
@@ -867,54 +789,6 @@ CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authe
   margin-bottom: 1.5rem;
   line-height: 1.55;
   font-weight: 500;
-}
-
-.table-card {
-  padding: 1.25rem;
-  margin-bottom: 1.5rem;
-  background: #ffffff;
-  border: 2.5px solid #0a0a0a;
-  border-radius: 8px;
-  box-shadow: 4px 4px 0 #0a0a0a;
-}
-
-.table-scroll {
-  overflow-x: auto;
-}
-
-.analytics-table {
-  width: 100%;
-  border-collapse: collapse;
-  text-align: left;
-  font-size: 0.875rem;
-}
-
-.analytics-table th {
-  padding: 0.65rem 0.875rem;
-  border-bottom: 2.5px solid #0a0a0a;
-  color: #4a4a4a;
-  font-size: 0.6875rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  white-space: nowrap;
-}
-
-.analytics-table td {
-  padding: 0.875rem;
-  border-bottom: 1.5px solid #e5e1d8;
-  color: #0a0a0a;
-  font-weight: 500;
-}
-
-.text-center { text-align: center; }
-
-.activity-feed {
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-  max-height: 320px;
-  overflow-y: auto;
 }
 
 /* ── QR Studio ───────────────────────────────────────────────────────────── */
@@ -1964,16 +1838,7 @@ input:checked + .slider:before { transform: translateX(22px); }
     min-width: 0;
   }
   .business-list-grid { gap: 0.85rem; }
-  .stats-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 1.25rem;
-  }
-  .stat-card { padding: 0.9rem; }
-  .stat-card-value { font-size: 1.6rem; }
-  .table-card { padding: 0.875rem; }
   .section-title { font-size: 1rem; }
-  .analytics-table { min-width: 430px; }
   .qr-panel,
   .qr-preview-panel { padding: 1rem; }
   .qr-preview-frame {
@@ -2326,7 +2191,7 @@ input:checked + .slider:before { transform: translateX(22px); }
   import * as QRCodeLib from 'qrcode';
   import QrScanner from 'qr-scanner';
   import JSZip from 'jszip';
-  import type { Business, AnalyticsSummary, ShortLink } from '../../types';
+  import type { Business, ShortLink } from '../../types';
 
   // ── State ──────────────────────────────────────────────────────────────
   let businesses: Business[] = [];
@@ -2489,14 +2354,6 @@ input:checked + .slider:before { transform: translateX(22px); }
   const downloadSvgBtn    = document.getElementById('downloadSvgBtn');
   const openPrintCardBtn  = document.getElementById('openPrintCardBtn');
 
-  const statTotalViews    = document.getElementById('statTotalViews');
-  const statReviewClicks  = document.getElementById('statReviewClicks');
-  const statWaClicks      = document.getElementById('statWaClicks');
-  const statSocialClicks  = document.getElementById('statSocialClicks');
-  const statAvgConversion = document.getElementById('statAvgConversion');
-  const analyticsTableBody= document.getElementById('analyticsTableBody');
-  const liveActivityFeed  = document.getElementById('liveActivityFeed');
-
   const supabaseSetupModalBtn  = document.getElementById('supabaseSetupModalBtn');
   const supabaseModal          = document.getElementById('supabaseModal');
   const closeSupabaseModalBtn  = document.getElementById('closeSupabaseModalBtn');
@@ -2555,7 +2412,6 @@ input:checked + .slider:before { transform: translateX(22px); }
     renderBusinessesList();
     renderQrStock();
     populateQrStudio();
-    if (activeTabName === 'analyticsTab') renderAnalytics();
   }
 
   // ── Business cards ──────────────────────────────────────────────────────
@@ -2716,8 +2572,6 @@ input:checked + .slider:before { transform: translateX(22px); }
     tabContents.forEach(content => {
       (content as HTMLElement).style.display = content.id === tabId ? 'block' : 'none';
     });
-
-    if (tabId === 'analyticsTab') renderAnalytics();
   }
 
   // Attach to all tab buttons (desktop + mobile)
@@ -3584,70 +3438,6 @@ input:checked + .slider:before { transform: translateX(22px); }
       (qrScanManualBtn as HTMLButtonElement | null)?.click();
     }
   });
-
-  // ── Analytics ────────────────────────────────────────────────────────────
-  async function renderAnalytics() {
-    let totalViews = 0, totalReviews = 0, totalWa = 0, totalCalls = 0, totalSocials = 0;
-    const summaries: AnalyticsSummary[] = [];
-
-    for (const biz of businesses) {
-      const s = await DatabaseService.getAnalytics(biz.id, biz.slug);
-      summaries.push(s);
-      totalViews   += s.page_views;
-      totalReviews += s.google_review_clicks;
-      totalWa      += s.whatsapp_clicks;
-      totalCalls   += s.call_clicks;
-      totalSocials += s.instagram_clicks + s.facebook_clicks;
-    }
-
-    if (statTotalViews)    statTotalViews.textContent    = String(totalViews);
-    if (statReviewClicks)  statReviewClicks.textContent  = String(totalReviews);
-    if (statWaClicks)      statWaClicks.textContent      = String(totalWa);
-    if (statSocialClicks)  statSocialClicks.textContent  = String(totalCalls + totalSocials);
-    if (statAvgConversion) statAvgConversion.textContent = totalViews > 0 ? `${Math.round((totalReviews/totalViews)*100)}%` : '0%';
-
-    if (analyticsTableBody) {
-      analyticsTableBody.innerHTML = summaries.map(s => {
-        const biz = businesses.find(b => b.id === s.business_id);
-        return `
-          <tr style="border-bottom:1px solid var(--border-subtle);">
-            <td style="padding:.875rem;">
-              <div style="font-weight:700;color:#fff;">${biz ? biz.name : s.slug}</div>
-              <div style="font-size:.72rem;color:#818cf8;font-family:monospace;">/${s.slug}</div>
-              ${biz?.owner_email ? `<div style="font-size:.68rem;color:var(--text-dim);margin-top:.15rem;">👤 ${ownerShortName(biz.owner_email)}</div>` : ''}
-            </td>
-            <td style="padding:.875rem;text-align:center;font-weight:600;">${s.page_views}</td>
-            <td style="padding:.875rem;text-align:center;font-weight:700;color:#60a5fa;">${s.google_review_clicks}</td>
-            <td style="padding:.875rem;text-align:center;font-weight:600;color:#4ade80;">${s.whatsapp_clicks}</td>
-            <td style="padding:.875rem;text-align:center;font-weight:600;color:#38bdf8;" class="hide-sm">${s.call_clicks+s.instagram_clicks+s.facebook_clicks}</td>
-            <td style="padding:.875rem;text-align:center;">
-              <div style="display:flex;align-items:center;justify-content:center;gap:.4rem;">
-                <div style="width:50px;height:5px;background:#374151;border-radius:3px;overflow:hidden;">
-                  <div style="width:${Math.min(100,s.conversion_rate)}%;height:100%;background:#fbbf24;"></div>
-                </div>
-                <span style="font-weight:700;color:#fde047;">${s.conversion_rate}%</span>
-              </div>
-            </td>
-          </tr>`;
-      }).join('');
-    }
-
-    if (liveActivityFeed) {
-      const items: string[] = [];
-      summaries.forEach(s => {
-        const name = businesses.find(b => b.id === s.business_id)?.name || s.slug;
-        if (s.google_review_clicks > 0) items.push(`<span>⭐</span><span>5-star Google review — <strong>${name}</strong></span>`);
-        if (s.whatsapp_clicks > 0)      items.push(`<span>💬</span><span>WhatsApp chat started — <strong>${name}</strong></span>`);
-        if (s.page_views > 0)           items.push(`<span>📱</span><span>QR scanned at counter — <strong>${name}</strong></span>`);
-      });
-      liveActivityFeed.innerHTML = items.length === 0
-        ? `<div style="text-align:center;color:var(--text-muted);padding:1.5rem;">No interactions yet. Scan a counter card!</div>`
-        : items.map(i => `
-            <div style="display:flex;align-items:center;gap:.75rem;padding:.65rem .875rem;background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.05);border-radius:8px;font-size:.84rem;color:#e5e7eb;">
-              ${i}
-            </div>`).join('');
-    }
-  }
 
   // ── Google review link generator ────────────────────────────────────────
   const WRITE_REVIEW_BASE = 'https://search.google.com/local/writereview?placeid=';

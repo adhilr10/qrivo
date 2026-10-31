@@ -176,9 +176,8 @@ import Icon from '../components/Icon.astro';
 
 <script>
   import { DatabaseService } from '../lib/supabase';
-  import { DEMO_BUSINESSES } from '../lib/demo-businesses';
   import { parseShortCodeFromPath } from '../lib/short-links';
-  import type { Business, EventType } from '../types';
+  import type { Business } from '../types';
 
   const rawPath = window.location.pathname.replace(/^\/|\/$/g, '').toLowerCase();
   const shortCode = parseShortCodeFromPath(window.location.pathname);
@@ -226,10 +225,6 @@ import Icon from '../components/Icon.astro';
       }
     } catch (e) {
       console.warn('Error resolving slug from Supabase:', e);
-    }
-
-    if (!biz && shortCode) {
-      biz = DEMO_BUSINESSES.find((item) => item.short_code === shortCode) || null;
     }
 
     if (!biz) {
@@ -325,27 +320,7 @@ import Icon from '../components/Icon.astro';
 
     if (resolvingCard) resolvingCard.style.display = 'none';
     if (activeCard) activeCard.style.display = 'block';
-
-    // Track initial page_view anonymously
-    track('page_view');
   }
-
-  function track(eventType: EventType) {
-    if (!currentBusiness) return;
-    void DatabaseService.trackEvent({
-      business_id: currentBusiness.id,
-      slug: currentBusiness.slug,
-      event_type: eventType,
-    }).catch((error) => console.warn('Supabase analytics error:', error));
-  }
-
-  // Click listeners for analytics
-  googleCtaBtn?.addEventListener('click', () => track('google_review_click'));
-  whatsappCtaBtn?.addEventListener('click', () => track('whatsapp_click'));
-  waGridBtn?.addEventListener('click', () => track('whatsapp_click'));
-  phoneBtn?.addEventListener('click', () => track('call_click'));
-  instagramBtn?.addEventListener('click', () => track('instagram_click'));
-  facebookBtn?.addEventListener('click', () => track('facebook_click'));
 
   // Interactive 5-Star Rating Buttons
   starsRow?.addEventListener('click', (e) => {
@@ -357,8 +332,6 @@ import Icon from '../components/Icon.astro';
       { transform: 'scale(1.4) rotate(15deg)' },
       { transform: 'scale(1)' }
     ], { duration: 350 });
-
-    track('google_review_click');
 
     if (currentBusiness?.google_review_url) {
       setTimeout(() => {

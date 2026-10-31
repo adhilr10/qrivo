@@ -22,7 +22,6 @@ That shortener always stays the same. It redirects to the current business landi
 ### Why this matters:
 * **Zero Reprinting Costs**: If the business changes owners, updates its phone number, switches WhatsApp lines, or replaces its Google Place ID, the admin simply edits the destination links in the Admin Portal. The printed QR code on the counter continues working seamlessly!
 * **Reject without reprinting**: If a business rejects or cancels, delete it in Admin. The `/s/[code]` short link stays unassigned. Create the next business and reuse that short link — the physical QR stand keeps working.
-* **Anonymous Conversion Tracking**: Physical cards cannot track impressions. Qrivo tracks every page view, Google review tap, WhatsApp inquiry, and call click in real time.
 
 ---
 
@@ -30,13 +29,13 @@ That shortener always stays the same. It redirects to the current business landi
 
 * **Frontend**: [Astro 7](https://astro.build/)
   * Pure TypeScript & modern reactive UI components
-  * Mobile-first responsive design with CSS custom properties & glassmorphism
-  * Built-in mathematical zero-dependency QR code engine (`src/utils/qrcode.ts`) capable of generating SVG vectors and high-res PNGs (1024x1024)
+  * Mobile-first responsive design with CSS custom properties
+  * [qrcode](https://www.npmjs.com/package/qrcode) for QR matrices and [sharp](https://sharp.pixelplumbing.com/) for compositing them onto the branded counter-card artwork
   * Instant static build generation with client-side dynamic slug resolution
 * **Backend**: [Supabase](https://supabase.com/)
   * PostgreSQL database with Row Level Security (RLS)
-  * Tables: `businesses` and `analytics_events`
-  * Supabase is the single source of truth for business settings and analytics events.
+  * Tables: `businesses` and `short_links`
+  * Supabase is the single source of truth for business settings and QR assignments.
 
 ---
 
@@ -50,19 +49,21 @@ That shortener always stays the same. It redirects to the current business landi
 │   ├── layouts/
 │   │   └── Layout.astro    # Base HTML shell with dynamic brand theming & navigation
 │   ├── lib/
-│   │   └── supabase.ts     # Supabase client and database service
+│   │   ├── supabase.ts     # Supabase client and database service
+│   │   ├── qr-card.ts      # Counter-card geometry shared by server and browser
+│   │   └── qr-card-client.ts # Canvas fallback for runtimes without sharp
 │   ├── pages/
 │   │   ├── index.astro     # Public homepage & live showcase
 │   │   ├── [slug].astro    # Fast mobile-first customer counter landing page
 │   │   ├── admin/
 │   │   │   └── index.astro # Admin management portal & QR studio
+│   │   ├── api/
+│   │   │   └── qr-card.ts  # sharp renderer for branded counter cards
 │   │   └── 404.astro       # Dynamic slug resolver & friendly fallback
 │   ├── styles/
-│   │   └── global.css      # Design system, glassmorphism & printable tent card styles
-│   ├── types/
-│   │   └── index.ts        # TypeScript schemas for Business & Analytics
-│   └── utils/
-│       └── qrcode.ts       # Zero-dependency QR Code generator (SVG & Canvas PNG)
+│   │   └── global.css      # Design system & printable tent card styles
+│   └── types/
+│       └── index.ts        # TypeScript schemas for Business & ShortLink
 ├── supabase/
 │   └── schema.sql          # Complete Supabase PostgreSQL migration script
 └── package.json
@@ -94,7 +95,7 @@ npm run build
 
 ## 🗄 Supabase Setup
 
-Qrivo stores businesses and analytics exclusively in Supabase. The three demo cards are pre-rendered examples; run the included SQL migration to create the matching database records.
+Qrivo stores businesses and QR assignments exclusively in Supabase. Run the included SQL migration once to create the required tables.
 
 To connect your own cloud Supabase database:
 1. Create a project at [supabase.com](https://supabase.com).
@@ -106,7 +107,7 @@ PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
 ```
 4. Restart your Astro server. Qrivo will display **"Supabase Connected"** in the Admin Portal.
 
-Business creation, editing, deletion, and analytics access follow the Row Level Security policies in the migration. Sign in an administrator before using those admin-only operations.
+Business creation, editing, deletion, and QR assignment follow the Row Level Security policies in the migration. Sign in an administrator before using those admin-only operations.
 
 ### Admin authentication
 

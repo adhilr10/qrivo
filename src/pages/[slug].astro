@@ -1,26 +1,18 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Icon from '../components/Icon.astro';
-import { DEMO_BUSINESSES } from '../lib/demo-businesses';
 import { DatabaseService } from '../lib/supabase';
 import type { Business } from '../types';
 
 export async function getStaticPaths() {
-  const list = [...DEMO_BUSINESSES];
+  let list: Business[] = [];
   try {
     if (DatabaseService.isConfigured()) {
-      const fromDb = await DatabaseService.getBusinesses();
-      if (fromDb && fromDb.length > 0) {
-        const slugs = new Set(list.map((b) => b.slug));
-        for (const b of fromDb) {
-          if (!slugs.has(b.slug)) {
-            list.push(b);
-          }
-        }
-      }
+      list = (await DatabaseService.getBusinesses()) ?? [];
     }
-  } catch (e) {
-    // Keep demo businesses if Supabase is unavailable during build
+  } catch {
+    // If Supabase is unreachable at build time, no business pages are
+    // prerendered. The SSR /s/<code> route still resolves at runtime.
   }
 
   return list.map((b) => ({
@@ -37,7 +29,7 @@ const { slug } = Astro.params;
 const { initialBusiness } = Astro.props as Props;
 
 // Prerendered markup is immediately refreshed from Supabase in the browser.
-const business = initialBusiness || DEMO_BUSINESSES.find((b) => b.slug === slug);
+const business = initialBusiness;
 const brandColor = business?.brand_color || '#2563eb';
 const pageTitle = business ? `${business.name} | Review on Google` : 'Qrivo Counter Card';
 ---
@@ -180,7 +172,7 @@ const pageTitle = business ? `${business.name} | Review on Google` : 'Qrivo Coun
 
 <script>
   import { DatabaseService } from '../lib/supabase';
-  import type { Business, EventType } from '../types';
+  import type { Business } from '../types';
 
   const wrapper = document.getElementById('counterPageWrapper');
   const pathSlug = (window.location.pathname.replace(/^\/|\/$/g, '') || wrapper?.dataset.slug || '').toLowerCase();
@@ -306,45 +298,7 @@ const pageTitle = business ? `${business.name} | Review on Google` : 'Qrivo Coun
         facebookBtn.style.display = 'none';
       }
     }
-
-    // Track initial page_view event anonymously
-    track('page_view');
   }
-
-  // Analytics logging helper
-  function track(eventType: EventType) {
-    if (!currentBusiness) return;
-    void DatabaseService.trackEvent({
-      business_id: currentBusiness.id,
-      slug: currentBusiness.slug,
-      event_type: eventType,
-    }).catch((error) => console.warn('Supabase analytics error:', error));
-  }
-
-  // Event Listeners for Clicks
-  googleCtaBtn?.addEventListener('click', () => {
-    track('google_review_click');
-  });
-
-  whatsappCtaBtn?.addEventListener('click', () => {
-    track('whatsapp_click');
-  });
-
-  waGridBtn?.addEventListener('click', () => {
-    track('whatsapp_click');
-  });
-
-  phoneBtn?.addEventListener('click', () => {
-    track('call_click');
-  });
-
-  instagramBtn?.addEventListener('click', () => {
-    track('instagram_click');
-  });
-
-  facebookBtn?.addEventListener('click', () => {
-    track('facebook_click');
-  });
 
   // Interactive 5-Star Rating Buttons
   starsRow?.addEventListener('click', (e) => {
@@ -358,8 +312,6 @@ const pageTitle = business ? `${business.name} | Review on Google` : 'Qrivo Coun
       { transform: 'scale(1.4) rotate(15deg)' },
       { transform: 'scale(1)' }
     ], { duration: 350 });
-
-    track('google_review_click');
 
     // Open Google Review link in new tab
     if (currentBusiness?.google_review_url) {

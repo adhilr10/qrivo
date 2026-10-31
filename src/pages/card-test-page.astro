@@ -4,13 +4,12 @@ export const prerender = false;
 <html>
   <head><meta charset="utf-8" /><title>card test</title></head>
   <body>
-    <canvas id="out"></canvas>
     <script>
       import { renderQrCardOnCanvas } from '../lib/qr-card-client';
 
       const blob = await renderQrCardOnCanvas('https://qrivo.example.com/s/k7m2pq', 'png');
       const bitmap = await createImageBitmap(blob);
-      const canvas = document.getElementById('out') as HTMLCanvasElement;
+      const canvas = document.createElement('canvas');
       canvas.width = bitmap.width;
       canvas.height = bitmap.height;
       const ctx = canvas.getContext('2d')!;
@@ -18,8 +17,8 @@ export const prerender = false;
 
       const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
       let minX = 1e9, minY = 1e9, maxX = -1, maxY = -1;
-      for (let y = 650; y < 1240; y++) {
-        for (let x = 200; x < 900; x++) {
+      for (let y = 690; y < 1215; y++) {
+        for (let x = 260; x < 830; x++) {
           const i = (y * canvas.width + x) * 4;
           if (data[i] < 60 && data[i + 1] < 60 && data[i + 2] < 60) {
             if (x < minX) minX = x;

@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { generateShortCode } from './short-links';
-import type { AnalyticsEvent, AnalyticsSummary, Business, EventType, ShortLink } from '../types';
+import type { Business, ShortLink } from '../types';
 
 export interface SupabaseConfig {
   url: string;
@@ -115,31 +115,6 @@ async function applyShortLinkAssignment(
     saved.short_link_error = error instanceof Error ? error.message : String(error);
   }
   return saved;
-}
-
-function toSummary(businessId: string, slug: string, events: AnalyticsEvent[]): AnalyticsSummary {
-  const count = (eventType: EventType) => events.filter((event) => event.event_type === eventType).length;
-  const page_views = count('page_view');
-  const google_review_clicks = count('google_review_click');
-  const whatsapp_clicks = count('whatsapp_click');
-  const call_clicks = count('call_click');
-  const instagram_clicks = count('instagram_click');
-  const facebook_clicks = count('facebook_click');
-  const total_clicks = google_review_clicks + whatsapp_clicks + call_clicks + instagram_clicks + facebook_clicks;
-
-  return {
-    business_id: businessId,
-    slug,
-    page_views,
-    google_review_clicks,
-    whatsapp_clicks,
-    call_clicks,
-    instagram_clicks,
-    facebook_clicks,
-    total_clicks,
-    conversion_rate: page_views ? Math.round((google_review_clicks / page_views) * 100) : 0,
-    recent_events: events.slice(0, 20),
-  };
 }
 
 /** All application persistence goes through Supabase. */
@@ -468,35 +443,5 @@ export const DatabaseService = {
     }
 
     return true;
-  },
-
-  async trackEvent(data: {
-    business_id: string;
-    slug: string;
-    event_type: EventType;
-    user_agent?: string;
-    referrer?: string;
-  }): Promise<void> {
-    const { error } = await requireSupabase().from('analytics_events').insert({
-      business_id: data.business_id,
-      slug: data.slug,
-      event_type: data.event_type,
-      user_agent: data.user_agent || (typeof navigator !== 'undefined' ? navigator.userAgent : ''),
-      referrer: data.referrer || (typeof document !== 'undefined' ? document.referrer : ''),
-    });
-
-    if (error) throw error;
-  },
-
-  async getAnalytics(businessId: string, slug: string): Promise<AnalyticsSummary> {
-    const { data, error } = await requireSupabase()
-      .from('analytics_events')
-      .select('*')
-      .eq('business_id', businessId)
-      .order('created_at', { ascending: false })
-      .limit(500);
-
-    if (error) throw error;
-    return toSummary(businessId, slug, (data ?? []) as AnalyticsEvent[]);
   },
 };

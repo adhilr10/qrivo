@@ -1,6 +1,5 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { DEMO_BUSINESSES } from '../../lib/demo-businesses';
 import { DatabaseService } from '../../lib/supabase';
 
 export const prerender = false;
@@ -32,22 +31,12 @@ try {
   console.warn('[/s/[code]] Supabase lookup failed:', error);
 }
 
-// ── 3. Fallback to demo businesses ───────────────────────────────────────
-if (!assignedSlug) {
-  const demo = DEMO_BUSINESSES.find((b) => b.short_code === code);
-  if (demo) {
-    assignedSlug = demo.slug;
-    linkExists = true;
-    lastLabel = demo.name;
-  }
-}
-
-// ── 4. Redirect immediately if resolved ──────────────────────────────────
+// ── 3. Redirect immediately if resolved ──────────────────────────────────
 if (assignedSlug) {
   return Astro.redirect(`/${assignedSlug}`, 302);
 }
 
-// ── 5. Not resolved: render informational page (no JS redirect fallback) ─
+// ── 4. Not resolved: render informational page (no JS redirect fallback) ─
 //    The server is authoritative. If it can't resolve, no client-side
 //    guess will be more reliable — it would use the same API.
 ---

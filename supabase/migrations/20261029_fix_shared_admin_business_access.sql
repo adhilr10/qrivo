@@ -11,7 +11,6 @@
 
 alter table public.businesses enable row level security;
 alter table public.short_links enable row level security;
-alter table public.analytics_events enable row level security;
 
 -- 1. Every business is readable by anonymous visitors (customer counter pages)
 --    and by every signed-in admin.
@@ -45,12 +44,3 @@ create policy "Admins manage short links"
     to authenticated
     using (true)
     with check (true);
-
--- 4. Analytics from every business stay visible to every admin.
-drop policy if exists "Admins can view analytics" on public.analytics_events;
-drop policy if exists "Admins can view analytics events" on public.analytics_events;
-create policy "Admins can view analytics events"
-    on public.analytics_events
-    for select
-    to authenticated
-    using (true);

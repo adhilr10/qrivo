@@ -1,12 +1,11 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import Icon from '../components/Icon.astro';
-import { DEMO_BUSINESSES } from '../lib/demo-businesses';
 import { DatabaseService } from '../lib/supabase';
 import type { Business } from '../types';
 
-let business: Business = DEMO_BUSINESSES.find((b) => b.slug === 'qrivo') || {
-  id: 'demo-qrivo',
+let business: Business = {
+  id: 'qrivo',
   name: 'Qrivo',
   slug: 'qrivo',
   logo_url: '/qrivo-logo.svg',
@@ -158,7 +157,7 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
 
 <script>
   import { DatabaseService } from '../lib/supabase';
-  import type { Business, EventType } from '../types';
+  import type { Business } from '../types';
 
   const slug = 'qrivo';
 
@@ -273,42 +272,7 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
         facebookBtn.style.display = 'none';
       }
     }
-
-    track('page_view');
   }
-
-  function track(eventType: EventType) {
-    if (!currentBusiness) return;
-    void DatabaseService.trackEvent({
-      business_id: currentBusiness.id,
-      slug: currentBusiness.slug,
-      event_type: eventType,
-    }).catch((error) => console.warn('Supabase analytics error:', error));
-  }
-
-  googleCtaBtn?.addEventListener('click', () => {
-    track('google_review_click');
-  });
-
-  whatsappCtaBtn?.addEventListener('click', () => {
-    track('whatsapp_click');
-  });
-
-  waGridBtn?.addEventListener('click', () => {
-    track('whatsapp_click');
-  });
-
-  phoneBtn?.addEventListener('click', () => {
-    track('call_click');
-  });
-
-  instagramBtn?.addEventListener('click', () => {
-    track('instagram_click');
-  });
-
-  facebookBtn?.addEventListener('click', () => {
-    track('facebook_click');
-  });
 
   starsRow?.addEventListener('click', (e) => {
     const target = (e.target as HTMLElement).closest('.star-btn');
@@ -319,8 +283,6 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
       { transform: 'scale(1.4) rotate(15deg)' },
       { transform: 'scale(1)' }
     ], { duration: 350 });
-
-    track('google_review_click');
 
     const reviewUrl = currentBusiness?.google_review_url || googleCtaBtn?.href;
     if (reviewUrl && reviewUrl !== '#') {

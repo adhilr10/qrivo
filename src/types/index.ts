@@ -1,11 +1,3 @@
-export type EventType =
-  | 'page_view'
-  | 'google_review_click'
-  | 'whatsapp_click'
-  | 'call_click'
-  | 'instagram_click'
-  | 'facebook_click';
-
 export interface ShortLink {
   code: string;
   business_id: string | null;
@@ -38,29 +30,4 @@ export interface Business {
   user_id?: string;
   /** Email of the admin who created this business. Stored at creation time. */
   owner_email?: string;
-}
-
-export interface AnalyticsEvent {
-  id?: string;
-  business_id: string;
-  slug: string;
-  event_type: EventType;
-  user_agent?: string;
-  referrer?: string;
-  ip_hash?: string;
-  created_at?: string;
-}
-
-export interface AnalyticsSummary {
-  business_id: string;
-  slug: string;
-  page_views: number;
-  google_review_clicks: number;
-  whatsapp_clicks: number;
-  call_clicks: number;
-  instagram_clicks: number;
-  facebook_clicks: number;
-  total_clicks: number;
-  conversion_rate: number; // review clicks / page views %
-  recent_events?: AnalyticsEvent[];
 }
