@@ -17,6 +17,14 @@ export interface Business {
   logo_url?: string;
   brand_color: string;
   tagline?: string;
+  /** Locality used for local SEO, e.g. "Connaught Place". */
+  place_name?: string;
+  /** Road or street used for local SEO, e.g. "MG Road". */
+  road?: string;
+  /** Optional override for the search/social title. */
+  seo_title?: string;
+  /** Optional override for the meta description. */
+  seo_description?: string;
   google_review_url: string;
   whatsapp_number?: string;
   whatsapp_message?: string;
@@ -30,4 +38,6 @@ export interface Business {
   user_id?: string;
   /** Email of the admin who created this business. Stored at creation time. */
   owner_email?: string;
+  /** Set when the database is missing a newer optional column. */
+  schema_warning?: string;
 }

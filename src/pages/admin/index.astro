@@ -264,8 +264,22 @@ import Icon from '../../components/Icon.astro';
 
             <div class="form-grid">
               <div class="form-group">
-                <label class="form-label" for="formLogoUrl">Logo URL</label>
-                <input type="url" id="formLogoUrl" class="form-input" placeholder="Optional — default logo used" />
+                <label class="form-label" for="formLogoFile">Business Logo</label>
+                <div class="logo-upload-row">
+                  <div class="logo-upload-preview" id="logoUploadPreview">
+                    <img id="logoUploadImg" alt="Selected logo preview" hidden />
+                    <span class="logo-upload-empty" id="logoUploadEmpty">No logo</span>
+                  </div>
+                  <div class="logo-upload-actions">
+                    <input type="file" id="formLogoFile" accept="image/png,image/jpeg,image/webp,image/gif,image/svg+xml" hidden />
+                    <button type="button" id="logoUploadBtn" class="btn btn-secondary btn-sm">⬆ Upload image</button>
+                    <button type="button" id="logoRemoveBtn" class="btn btn-outline btn-sm" hidden>Remove</button>
+                    <span class="form-helper" id="logoUploadStatus" role="status" aria-live="polite">
+                      PNG, JPG, WebP or SVG · up to 5 MB
+                    </span>
+                  </div>
+                </div>
+                <input type="hidden" id="formLogoUrl" />
               </div>
               <div class="form-group">
                 <label class="form-label" for="formBrandColor">Brand Color</label>
@@ -1444,6 +1458,69 @@ CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authe
   padding-top: 0.5rem;
 }
 
+/* ── Logo upload (ImageKit) ──────────────────────────────────────────────── */
+.logo-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.6rem;
+  background: #fffdf5;
+  border: 2.5px solid #0a0a0a;
+  border-radius: 8px;
+  box-shadow: 3px 3px 0 #0a0a0a;
+}
+
+.logo-upload-preview {
+  flex: 0 0 auto;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #ffffff;
+  border: 2px solid #0a0a0a;
+  border-radius: 8px;
+}
+
+.logo-upload-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.logo-upload-empty {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #767676;
+  text-align: center;
+}
+
+.logo-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.logo-upload-actions .form-helper {
+  flex: 1 1 100%;
+  line-height: 1.35;
+}
+
+.logo-upload-actions .form-helper.is-error { color: #b91c1c; }
+.logo-upload-actions .form-helper.is-ok { color: #15803d; }
+
+@media (max-width: 479px) {
+  .logo-upload-row { align-items: flex-start; }
+  .logo-upload-preview { width: 56px; height: 56px; }
+  .logo-upload-actions { flex: 1 1 0; }
+  .logo-upload-actions .btn { flex: 1 1 auto; }
+}
+
 /* Phone mockup */
 .phone-mockup-wrapper {
   display: none;
@@ -2186,6 +2263,7 @@ input:checked + .slider:before { transform: translateX(22px); }
 
 <script>
   import { DatabaseService, getSupabaseConfig, supabase } from '../../lib/supabase';
+  import { uploadLogo } from '../../lib/imagekit';
   import { qrDestinationUrl, shortLinkUrl } from '../../lib/short-links';
   import { renderQrCardOnCanvas } from '../../lib/qr-card-client';
   import * as QRCodeLib from 'qrcode';
@@ -2202,6 +2280,7 @@ input:checked + .slider:before { transform: translateX(22px); }
   let qrScanner: QrScanner | null = null;
   let scanBusy = false;
   let pendingAssignCode = '';
+  let logoUploading = false;
   const RESERVED_SLUGS = new Set(['s', 'admin', 'login', '404']);
 
   const DEFAULT_LOGO_URL = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop&q=80';
@@ -2278,6 +2357,12 @@ input:checked + .slider:before { transform: translateX(22px); }
   const formName           = document.getElementById('formName') as HTMLInputElement;
   const formSlug           = document.getElementById('formSlug') as HTMLInputElement;
   const formLogoUrl        = document.getElementById('formLogoUrl') as HTMLInputElement;
+  const formLogoFile       = document.getElementById('formLogoFile') as HTMLInputElement;
+  const logoUploadBtn      = document.getElementById('logoUploadBtn') as HTMLButtonElement;
+  const logoRemoveBtn      = document.getElementById('logoRemoveBtn') as HTMLButtonElement;
+  const logoUploadImg      = document.getElementById('logoUploadImg') as HTMLImageElement;
+  const logoUploadEmpty    = document.getElementById('logoUploadEmpty');
+  const logoUploadStatus   = document.getElementById('logoUploadStatus');
   const formBrandColor     = document.getElementById('formBrandColor') as HTMLInputElement;
   const formBrandColorText = document.getElementById('formBrandColorText') as HTMLInputElement;
   const formTagline        = document.getElementById('formTagline') as HTMLInputElement;
@@ -2593,7 +2678,8 @@ input:checked + .slider:before { transform: translateX(22px); }
     formBizId.value = '';
     formName.value = '';
     formSlug.value = '';
-    formLogoUrl.value = '';
+    setLogoValue('');
+    setLogoStatus(LOGO_HELP_TEXT);
     formBrandColor.value = '#2563eb';
     formBrandColorText.value = '#2563eb';
     formTagline.value = '';
@@ -2617,7 +2703,8 @@ input:checked + .slider:before { transform: translateX(22px); }
     formBizId.value          = biz.id;
     formName.value           = biz.name;
     formSlug.value           = biz.slug;
-    formLogoUrl.value        = biz.logo_url || '';
+    setLogoValue(biz.logo_url || '');
+    setLogoStatus(biz.logo_url ? 'Current logo — upload a new file to replace it.' : LOGO_HELP_TEXT);
     formBrandColor.value     = biz.brand_color || '#2563eb';
     formBrandColorText.value = biz.brand_color || '#2563eb';
     formTagline.value        = biz.tagline || '';
@@ -2754,6 +2841,82 @@ input:checked + .slider:before { transform: translateX(22px); }
     if (prevMsg)     prevMsg.textContent  = formCustomMsg.value || '';
     document.getElementById('livePhoneMockup')?.style.setProperty('--brand', col);
   }
+
+  // ── Logo upload (ImageKit) ──────────────────────────────────────────────
+  const LOGO_HELP_TEXT = 'PNG, JPG, WebP or SVG · up to 5 MB';
+
+  function setLogoStatus(message: string, tone: 'idle' | 'ok' | 'error' = 'idle') {
+    if (!logoUploadStatus) return;
+    logoUploadStatus.textContent = message;
+    logoUploadStatus.classList.toggle('is-ok', tone === 'ok');
+    logoUploadStatus.classList.toggle('is-error', tone === 'error');
+  }
+
+  function setLogoValue(url: string) {
+    formLogoUrl.value = url;
+    if (logoUploadImg && logoUploadEmpty) {
+      if (url) {
+        logoUploadImg.src = url;
+        logoUploadImg.hidden = false;
+        logoUploadEmpty.hidden = true;
+      } else {
+        logoUploadImg.removeAttribute('src');
+        logoUploadImg.hidden = true;
+        logoUploadEmpty.hidden = false;
+      }
+    }
+    if (logoRemoveBtn) logoRemoveBtn.hidden = !url;
+    syncPhonePreview();
+  }
+
+  logoUploadBtn?.addEventListener('click', () => formLogoFile?.click());
+
+  formLogoFile?.addEventListener('change', async () => {
+    const file = formLogoFile.files?.[0];
+    // Reset the picker so choosing the same file again still fires `change`.
+    formLogoFile.value = '';
+    if (!file || logoUploading) return;
+
+    if (!supabase) {
+      setLogoStatus('Supabase is not configured, so uploads are unavailable.', 'error');
+      return;
+    }
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const accessToken = sessionData.session?.access_token;
+    if (!accessToken) {
+      setLogoStatus('Your session expired. Sign in again to upload.', 'error');
+      return;
+    }
+
+    logoUploading = true;
+    if (logoUploadBtn) {
+      logoUploadBtn.disabled = true;
+      logoUploadBtn.textContent = 'Uploading…';
+    }
+    setLogoStatus('Uploading to ImageKit… 0%');
+
+    try {
+      const uploaded = await uploadLogo(file, accessToken, (percent) => {
+        setLogoStatus(`Uploading to ImageKit… ${percent}%`);
+      });
+      setLogoValue(uploaded.url);
+      setLogoStatus('Logo uploaded to ImageKit ✓', 'ok');
+    } catch (error) {
+      setLogoStatus(error instanceof Error ? error.message : String(error), 'error');
+    } finally {
+      logoUploading = false;
+      if (logoUploadBtn) {
+        logoUploadBtn.disabled = false;
+        logoUploadBtn.textContent = '⬆ Upload image';
+      }
+    }
+  });
+
+  logoRemoveBtn?.addEventListener('click', () => {
+    setLogoValue('');
+    setLogoStatus(`Logo removed — the default logo will be used. ${LOGO_HELP_TEXT}`);
+  });
 
   // ── Save form ───────────────────────────────────────────────────────────
   bizForm?.addEventListener('submit', async e => {

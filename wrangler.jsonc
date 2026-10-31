@@ -13,7 +13,10 @@
 	},
 	"vars": {
 		"PUBLIC_SUPABASE_URL": "https://julfsqeucjdsnsuqvpzv.supabase.co",
-		"PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_JAWTqsntLFC5_98ZjGLgRA_hpknzcN9"
+		"PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_JAWTqsntLFC5_98ZjGLgRA_hpknzcN9",
+		"IMAGEKIT_PUBLIC_KEY": "public_Wz0GcrXI1qkDaRi/KpadEIzsuDE=",
+		"IMAGEKIT_PRIVATE_KEY":"private_xWpy1ok2/gffKerHwiY6qrkGa58=",
+		"IMAGEKIT_URL_ENDPOINT":"https://ik.imagekit.io/vv3nigxnf"
 	},
 	"observability": {
 		"enabled": true

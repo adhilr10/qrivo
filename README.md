@@ -31,6 +31,7 @@ That shortener always stays the same. It redirects to the current business landi
   * Pure TypeScript & modern reactive UI components
   * Mobile-first responsive design with CSS custom properties
   * [qrcode](https://www.npmjs.com/package/qrcode) for QR matrices and [sharp](https://sharp.pixelplumbing.com/) for compositing them onto the branded counter-card artwork
+  * [ImageKit](https://imagekit.io/) for business logo uploads and CDN delivery (signed browser uploads)
   * Instant static build generation with client-side dynamic slug resolution
 * **Backend**: [Supabase](https://supabase.com/)
   * PostgreSQL database with Row Level Security (RLS)
@@ -50,6 +51,7 @@ That shortener always stays the same. It redirects to the current business landi
 │   │   └── Layout.astro    # Base HTML shell with dynamic brand theming & navigation
 │   ├── lib/
 │   │   ├── supabase.ts     # Supabase client and database service
+│   │   ├── imagekit.ts     # Browser-side logo upload to ImageKit
 │   │   ├── qr-card.ts      # Counter-card geometry shared by server and browser
 │   │   └── qr-card-client.ts # Canvas fallback for runtimes without sharp
 │   ├── pages/
@@ -58,7 +60,8 @@ That shortener always stays the same. It redirects to the current business landi
 │   │   ├── admin/
 │   │   │   └── index.astro # Admin management portal & QR studio
 │   │   ├── api/
-│   │   │   └── qr-card.ts  # sharp renderer for branded counter cards
+│   │   │   ├── qr-card.ts  # sharp renderer for branded counter cards
+│   │   │   └── upload-auth.ts # Signed ImageKit upload credentials for admins
 │   │   └── 404.astro       # Dynamic slug resolver & friendly fallback
 │   ├── styles/
 │   │   └── global.css      # Design system & printable tent card styles
@@ -104,6 +107,9 @@ To connect your own cloud Supabase database:
 ```env
 PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+IMAGEKIT_PUBLIC_KEY=your-public-key
+IMAGEKIT_PRIVATE_KEY=your-private-key
+IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_imagekit_id
 ```
 4. Restart your Astro server. Qrivo will display **"Supabase Connected"** in the Admin Portal.
 
@@ -114,6 +120,24 @@ Business creation, editing, deletion, and QR assignment follow the Row Level Sec
 Create administrator email/password accounts in the Supabase dashboard, then sign in at `/admin/login`. This application does not expose account registration.
 
 If the Supabase project already existed before admin authentication was added, run [`supabase/migrations/20261027_add_business_owner.sql`](supabase/migrations/20261027_add_business_owner.sql) once in the Supabase SQL Editor. It adds the ownership column required by the admin RLS policy.
+
+### ImageKit setup (business logos)
+
+Business logos are uploaded from the admin form straight to [ImageKit](https://imagekit.io) and only the resulting CDN URL is stored in `businesses.logo_url`.
+
+1. Create an ImageKit account and open **Developer Options → API Keys**.
+2. Copy the **Public key**, **Private key**, and your **URL endpoint** into `.env` (see `.env.example`).
+3. Uploads are signed by [`src/pages/api/upload-auth.ts`](src/pages/api/upload-auth.ts), which refuses to issue credentials unless the request carries a valid Supabase admin session. The private key never reaches the browser.
+4. Files are stored in the `/qrivo/logos` folder and served from your ImageKit URL endpoint. Saved logo URLs include `?tr=f-auto`, so ImageKit delivers WebP/AVIF to supporting browsers while the uploaded original is kept unchanged.
+
+For Cloudflare deployments, set the private key as a worker secret instead of a plain variable:
+
+```bash
+npx wrangler secret put IMAGEKIT_PRIVATE_KEY
+npx wrangler secret put IMAGEKIT_PUBLIC_KEY
+```
+
+`IMAGEKIT_URL_ENDPOINT` is read at build time by the optional Astro ImageKit image service; leave it empty to build without the service, or set it to enable ImageKit-optimized `<Image />` delivery.
 
 ---
 
