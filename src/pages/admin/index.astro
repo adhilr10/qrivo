@@ -197,7 +197,7 @@ import Icon from '../../components/Icon.astro';
           <!-- Left panel -->
           <div class="glass-card qr-panel">
             <h2 class="section-title" style="margin-bottom:.25rem;">Dynamic QR Studio</h2>
-            <p class="section-desc">High-res PNG &amp; SVG for physical counter stands. Always encodes the permanent <code>/s/xxxxxx</code> link.</p>
+            <p class="section-desc">Branded counter cards with the QR printed on the Qrivo board, plus raw SVG. Always encodes the permanent <code>/s/xxxxxx</code> link.</p>
 
             <div class="form-group" style="margin-bottom:1.25rem;">
               <label class="form-label" for="qrBizSelect">Business Destination</label>
@@ -227,7 +227,7 @@ import Icon from '../../components/Icon.astro';
             <div class="qr-action-stack">
               <button type="button" id="downloadPngBtn" class="btn btn-primary" style="width:100%;">
                 <Icon name="download" size={18} />
-                <span>Download PNG (1024×1024)</span>
+                <span>Download Card (1050×1500)</span>
               </button>
               <button type="button" id="downloadSvgBtn" class="btn btn-secondary" style="width:100%;">
                 <Icon name="download" size={18} />
@@ -247,7 +247,6 @@ import Icon from '../../components/Icon.astro';
             </div>
             <div id="qrPreviewBizName" class="qr-biz-name">Select a business</div>
             <div id="qrPreviewTagline" class="qr-biz-tag">Point phone camera to test</div>
-            <canvas id="qrExportCanvas" style="display:none;"></canvas>
           </div>
 
         </div>
@@ -2323,6 +2322,7 @@ input:checked + .slider:before { transform: translateX(22px); }
 <script>
   import { DatabaseService, getSupabaseConfig, supabase } from '../../lib/supabase';
   import { qrDestinationUrl, shortLinkUrl } from '../../lib/short-links';
+  import { renderQrCardOnCanvas } from '../../lib/qr-card-client';
   import * as QRCodeLib from 'qrcode';
   import QrScanner from 'qr-scanner';
   import JSZip from 'jszip';
@@ -2482,7 +2482,6 @@ input:checked + .slider:before { transform: translateX(22px); }
   const qrPreviewContainer= document.getElementById('qrPreviewContainer');
   const qrPreviewBizName  = document.getElementById('qrPreviewBizName');
   const qrPreviewTagline  = document.getElementById('qrPreviewTagline');
-  const qrExportCanvas    = document.getElementById('qrExportCanvas') as HTMLCanvasElement;
   const copyQrUrlBtn      = document.getElementById('copyQrUrlBtn');
   const qrMatchBrandBtn   = document.getElementById('qrMatchBrandBtn');
   const qrResetBlackBtn   = document.getElementById('qrResetBlackBtn');
@@ -3005,20 +3004,6 @@ input:checked + .slider:before { transform: translateX(22px); }
     } catch (err) {
       console.error('QR SVG render failed:', err);
     }
-
-    // High-res canvas for PNG download
-    if (qrExportCanvas) {
-      try {
-        await QRCodeLib.toCanvas(qrExportCanvas, fullUrl, {
-          color: { dark: color, light: '#ffffff' },
-          margin: 3,
-          width: 1024,
-          errorCorrectionLevel: 'M',
-        });
-      } catch (err) {
-        console.error('QR canvas render failed:', err);
-      }
-    }
   }
 
   qrColorPicker?.addEventListener('input', () => { void renderQrCode(); });
@@ -3034,21 +3019,11 @@ input:checked + .slider:before { transform: translateX(22px); }
   downloadPngBtn?.addEventListener('click', async () => {
     if (!selectedBizForQr) return;
     const fullUrl = qrUrlFor(selectedBizForQr);
-    const color   = qrColorPicker?.value || '#000000';
+    const code = selectedBizForQr.short_code || selectedBizForQr.slug;
     try {
-      const dataUrl = await QRCodeLib.toDataURL(fullUrl, {
-        type: 'image/png',
-        color: { dark: color, light: '#ffffff' },
-        margin: 3,
-        width: 1024,
-        errorCorrectionLevel: 'M',
-      });
-      const a = document.createElement('a');
-      a.download = `qrivo-qr-${selectedBizForQr.short_code || selectedBizForQr.slug}.png`;
-      a.href = dataUrl as string;
-      a.click();
+      await downloadQrCard(fullUrl, code, 'png');
     } catch (err) {
-      alert('Failed to generate PNG: ' + String(err));
+      alert('Failed to generate card: ' + String(err));
     }
   });
   downloadSvgBtn?.addEventListener('click', async () => {
@@ -3136,7 +3111,7 @@ input:checked + .slider:before { transform: translateX(22px); }
             <span class="qr-stock-meta">${created || 'blank stand'}</span>
             <div class="qr-stock-actions">
               <button type="button" class="btn btn-outline btn-sm" data-stock-act="copy" data-code="${link.code}">Copy</button>
-              <button type="button" class="btn btn-outline btn-sm" data-stock-act="png" data-code="${link.code}">PNG</button>
+              <button type="button" class="btn btn-outline btn-sm" data-stock-act="png" data-code="${link.code}">Card</button>
               <button type="button" class="btn btn-secondary btn-sm" data-stock-act="assign" data-code="${link.code}">Assign</button>
             </div>
           </div>`;
@@ -3151,7 +3126,7 @@ input:checked + .slider:before { transform: translateX(22px); }
               type="button"
               class="btn btn-secondary btn-sm qr-stock-batch-download"
               data-stock-batch="${groupIndex}"
-              title="Download this batch as a ZIP of 1024px PNGs"
+              title="Download this batch as a ZIP of printable card images"
             >⬇ Download ZIP</button>
           </div>
           ${items}
@@ -3188,6 +3163,57 @@ input:checked + .slider:before { transform: translateX(22px); }
     return cleaned || fallback;
   }
 
+  // ── Branded counter cards ─────────────────────────────────────────────
+  // The QR is drawn onto the white board of the Qrivo template. The server
+  // route uses sharp (best quality); Cloudflare Workers cannot run native
+  // modules, so the same geometry is replayed on a Canvas in the browser.
+  let cardRendererMode: 'unknown' | 'server' | 'canvas' = 'unknown';
+
+  function cardFileName(code: string, format: 'png' | 'jpeg'): string {
+    return `qrivo-card-${code}.${format === 'jpeg' ? 'jpg' : 'png'}`;
+  }
+
+  function downloadBlob(blob: Blob, fileName: string) {
+    const href = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = href;
+    a.download = fileName;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(href), 5000);
+  }
+
+  async function generateQrCard(url: string, format: 'png' | 'jpeg'): Promise<Blob> {
+    if (cardRendererMode !== 'canvas') {
+      try {
+        const response = await fetch('/api/qr-card', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url, format }),
+        });
+        if (response.ok) {
+          const blob = await response.blob();
+          if (blob.size > 0 && blob.type.startsWith('image/')) {
+            cardRendererMode = 'server';
+            return blob;
+          }
+        } else if (response.status === 501) {
+          // Native sharp is not available on this runtime — stop probing and
+          // render every card in this batch on the Canvas.
+          cardRendererMode = 'canvas';
+        }
+      } catch (error) {
+        console.warn('Server card renderer unavailable, using Canvas:', error);
+        cardRendererMode = 'canvas';
+      }
+    }
+    return renderQrCardOnCanvas(url, format);
+  }
+
+  async function downloadQrCard(url: string, code: string, format: 'png' | 'jpeg' = 'png') {
+    const blob = await generateQrCard(url, format);
+    downloadBlob(blob, cardFileName(code, format));
+  }
+
   async function downloadQrZip(links: ShortLink[], batchLabel: string, button?: HTMLElement | null) {
     if (links.length === 0) return;
 
@@ -3207,28 +3233,23 @@ input:checked + .slider:before { transform: translateX(22px); }
         const url = stockLinkUrl(code);
         if (button) button.textContent = `Preparing ${index + 1}/${links.length}…`;
 
-        const dataUrl = await QRCodeLib.toDataURL(url, {
-          type: 'image/png',
-          color: { dark: '#000000', light: '#ffffff' },
-          margin: 3,
-          width: 1024,
-          errorCorrectionLevel: 'M',
-        });
-        const base64 = String(dataUrl).split(',')[1] || '';
-        folder.file(`${code}.png`, base64, { base64: true });
-        rows.push(`${code},${url},${code}.png`);
+        // JPEG keeps a 100-code batch to a few megabytes; the card artwork has
+        // no transparency, so there is nothing to lose versus PNG.
+        const blob = await generateQrCard(url, 'jpeg');
+        folder.file(`${code}.jpg`, blob);
+        rows.push(`${code},${url},${code}.jpg`);
       }
 
       folder.file('codes.csv', rows.join('\n'));
       folder.file(
         'README.txt',
         [
-          'Qrivo QR stands',
+          'Qrivo counter cards',
           `Batch: ${batchLabel || 'unlabeled'}`,
-          `Codes: ${links.length}`,
+          `Cards: ${links.length}`,
           '',
-          'Every QR encodes a permanent /s/<code> link.',
-          'Print the PNGs, then assign each code in Admin -> QR Codes.',
+          'Every card has a QR encoding a permanent /s/<code> link.',
+          'Print the JPGs, then assign each code in Admin -> QR Codes.',
           'If a shop says no, reassign the same stand — no reprint needed.',
         ].join('\n'),
       );
@@ -3263,19 +3284,9 @@ input:checked + .slider:before { transform: translateX(22px); }
 
   async function downloadStockPng(code: string) {
     try {
-      const dataUrl = await QRCodeLib.toDataURL(stockLinkUrl(code), {
-        type: 'image/png',
-        color: { dark: '#000000', light: '#ffffff' },
-        margin: 3,
-        width: 1024,
-        errorCorrectionLevel: 'M',
-      });
-      const a = document.createElement('a');
-      a.download = `qrivo-qr-${code}.png`;
-      a.href = dataUrl as string;
-      a.click();
+      await downloadQrCard(stockLinkUrl(code), code, 'png');
     } catch (err) {
-      alert('Failed to generate PNG: ' + String(err));
+      alert('Failed to generate card: ' + String(err));
     }
   }
 
@@ -3329,10 +3340,10 @@ input:checked + .slider:before { transform: translateX(22px); }
       <div class="qr-bulk-result-text">
         ✓ Created <strong>${created.length}</strong> QR ${created.length === 1 ? 'code' : 'codes'} in
         <strong>${escapeHtml(label)}</strong>.
-        Download the batch as one ZIP, print the stands, then assign each code when a shop signs up.
+        Download the batch as one ZIP of ready-to-print cards, then assign each code when a shop signs up.
       </div>
       <button type="button" class="btn btn-primary btn-sm" data-bulk-zip>
-        ⬇ Download ${created.length} PNG${created.length === 1 ? '' : 's'} (ZIP)
+        ⬇ Download ${created.length} card${created.length === 1 ? '' : 's'} (ZIP)
       </button>`;
     qrBulkResult.querySelector('[data-bulk-zip]')?.addEventListener('click', event => {
       void downloadQrZip(created, label, event.currentTarget as HTMLElement);

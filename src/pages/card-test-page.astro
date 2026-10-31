@@ -1,0 +1,42 @@
+---
+export const prerender = false;
+---
+<html>
+  <head><meta charset="utf-8" /><title>card test</title></head>
+  <body>
+    <canvas id="out"></canvas>
+    <script>
+      import { renderQrCardOnCanvas } from '../lib/qr-card-client';
+
+      const blob = await renderQrCardOnCanvas('https://qrivo.example.com/s/k7m2pq', 'png');
+      const bitmap = await createImageBitmap(blob);
+      const canvas = document.getElementById('out') as HTMLCanvasElement;
+      canvas.width = bitmap.width;
+      canvas.height = bitmap.height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(bitmap, 0, 0);
+
+      const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      let minX = 1e9, minY = 1e9, maxX = -1, maxY = -1;
+      for (let y = 650; y < 1240; y++) {
+        for (let x = 200; x < 900; x++) {
+          const i = (y * canvas.width + x) * 4;
+          if (data[i] < 60 && data[i + 1] < 60 && data[i + 2] < 60) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      (window as any).__card = {
+        size: blob.size,
+        type: blob.type,
+        width: bitmap.width,
+        height: bitmap.height,
+        bbox: { minX, minY, maxX, maxY, width: maxX - minX + 1, height: maxY - minY + 1 },
+        center: { x: (minX + maxX) / 2, y: (minY + maxY) / 2 },
+      };
+    </script>
+  </body>
+</html>
