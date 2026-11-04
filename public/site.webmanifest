@@ -5,7 +5,7 @@
   "description": "Turn counter QR scans into Google reviews, WhatsApp chats and calls with reusable QR stands.",
   "lang": "en-IN",
   "dir": "ltr",
-  "start_url": "/",
+  "start_url": "/admin",
   "scope": "/",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui", "browser"],
@@ -35,6 +35,19 @@
     }
   ],
   "shortcuts": [
+    {
+      "name": "Qrivo home",
+      "short_name": "Home",
+      "description": "Open the Qrivo counter card",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
     {
       "name": "Browse businesses",
       "short_name": "Businesses",
