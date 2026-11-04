@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 import Icon from '../components/Icon.astro';
 ---
 
-<Layout title="Qrivo Counter Card" hideNav={true}>
+<Layout title="Qrivo Counter Card" hideNav={true} noindex={true}>
   <div class="counter-page-wrapper" id="counterPageWrapper">
 
     <!-- Resolving / Connecting State -->
@@ -40,9 +40,9 @@ import Icon from '../components/Icon.astro';
         </span>
       </div>
 
-      <!-- Business Name & Tagline -->
+      <!-- Business Name & Category -->
       <h1 class="biz-title" id="bizTitle">Loading Business...</h1>
-      <p class="biz-tagline" id="bizTagline">Thank you for your visit!</p>
+      <p class="biz-category" id="bizCategory">Shop category</p>
 
       <!-- 5-Star Experience Rating Bar -->
       <div class="rating-prompt-card">
@@ -190,7 +190,7 @@ import Icon from '../components/Icon.astro';
 
   const bizLogoImg = document.getElementById('bizLogoImg') as HTMLImageElement;
   const bizTitle = document.getElementById('bizTitle');
-  const bizTagline = document.getElementById('bizTagline');
+  const bizCategory = document.getElementById('bizCategory');
   const customMessage = document.getElementById('customMessage');
   const googleCtaBtn = document.getElementById('googleCtaBtn') as HTMLAnchorElement;
   const whatsappCtaBtn = document.getElementById('whatsappCtaBtn') as HTMLAnchorElement;
@@ -252,7 +252,7 @@ import Icon from '../components/Icon.astro';
       bizLogoImg.alt = biz.name;
     }
     if (bizTitle) bizTitle.textContent = biz.name;
-    if (bizTagline) bizTagline.textContent = biz.tagline || 'Specialty Local Service';
+    if (bizCategory) bizCategory.textContent = biz.category || biz.tagline || '';
 
     if (customMessage) {
       if (biz.custom_message) {

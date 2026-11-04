@@ -6,6 +6,9 @@ interface Props {
   description?: string;
   brandColor?: string;
   hideNav?: boolean;
+  image?: string;
+  jsonLd?: Record<string, unknown>;
+  noindex?: boolean;
 }
 
 const {
@@ -13,11 +16,19 @@ const {
   description = 'Transform customer counter scans into verified 5-star Google reviews and direct WhatsApp inquiries in 10 seconds.',
   brandColor = '#4f46e5',
   hideNav = false,
+  image,
+  jsonLd,
+  noindex = false,
 } = Astro.props;
+
+const canonical = Astro.url.href;
+const imageUrl = image
+  ? new URL(image, Astro.site ?? Astro.url.origin).href
+  : undefined;
 ---
 
 <!doctype html>
-<html lang="en">
+<html lang="en-IN">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -25,10 +36,31 @@ const {
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <meta name="description" content={description} />
+    {noindex
+      ? <meta name="robots" content="noindex, nofollow" />
+      : <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    }
+    <link rel="canonical" href={canonical} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:site_name" content="Qrivo" />
+    <meta property="og:locale" content="en_IN" />
+    {imageUrl && <meta property="og:image" content={imageUrl} />}
+    {imageUrl && <meta property="og:image:alt" content={title} />}
+    <meta name="twitter:card" content={imageUrl ? 'summary_large_image' : 'summary'} />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    {imageUrl && <meta name="twitter:image" content={imageUrl} />}
+    {imageUrl && <meta name="twitter:image:alt" content={title} />}
     <meta name="theme-color" content={brandColor} />
+    {jsonLd && (
+      <script
+        type="application/ld+json"
+        set:html={JSON.stringify(jsonLd).replace(/</g, '\\u003c')}
+      />
+    )}
     <style define:vars={{ brand: brandColor }}>
       :root {
         --brand: var(--brand);
@@ -49,6 +81,7 @@ const {
           </a>
 
           <nav>
+            <a href="/businesses/" class="btn btn-secondary btn-sm">Businesses</a>
             <a href="/admin" class="btn btn-secondary btn-sm">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <rect width="18" height="18" x="3" y="3" rx="2"></rect>

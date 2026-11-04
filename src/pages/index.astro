@@ -2,6 +2,7 @@
 import Layout from '../layouts/Layout.astro';
 import Icon from '../components/Icon.astro';
 import { DatabaseService } from '../lib/supabase';
+import { businessCategory, businessLocationLine } from '../lib/seo';
 import type { Business } from '../types';
 
 let business: Business = {
@@ -10,7 +11,7 @@ let business: Business = {
   slug: 'qrivo',
   logo_url: '/qrivo-logo.svg',
   brand_color: '#6366f1',
-  tagline: 'Smart QR Counter Cards for Google Reviews & Instant Connections',
+  category: 'Smart QR Counter Cards',
   google_review_url: 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4',
   whatsapp_number: '+15550192834',
   whatsapp_message: 'Hi Qrivo! I would like to get smart QR counter cards for my business.',
@@ -35,9 +36,41 @@ try {
 
 const brandColor = business?.brand_color || '#6366f1';
 const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
+const businessLocation = businessLocationLine(business);
+const businessCategoryLabel = businessCategory(business);
+
+const site = Astro.site ?? new URL('https://qrivo.amazementtech521.workers.dev');
+const homeUrl = new URL('/', site).href;
+const orgId = `${homeUrl}#organization`;
+const socialProfiles = [business.instagram_url, business.facebook_url]
+  .map(url => (url || '').trim())
+  .filter(Boolean);
+const siteJsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': orgId,
+      name: 'Qrivo',
+      url: homeUrl,
+      logo: new URL('/qrivo-logo.svg', site).href,
+      description:
+        'Qrivo turns counter QR scans into Google reviews, WhatsApp chats and calls — with reusable QR stands that never need reprinting.',
+      ...(socialProfiles.length ? { sameAs: socialProfiles } : {}),
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${homeUrl}#website`,
+      url: homeUrl,
+      name: 'Qrivo',
+      inLanguage: 'en-IN',
+      publisher: { '@id': orgId },
+    },
+  ],
+};
 ---
 
-<Layout title={pageTitle} brandColor={brandColor} hideNav={true}>
+<Layout title={pageTitle} brandColor={brandColor} hideNav={true} jsonLd={siteJsonLd}>
   <div class="counter-page-wrapper" id="counterPageWrapper" data-slug="qrivo" data-biz-id={business?.id || ''}>
     
     <!-- Active Business Counter View -->
@@ -54,9 +87,10 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
         />
       </div>
 
-      <!-- Business Name & Tagline -->
+      <!-- Business Name, Location & Category -->
       <h1 class="biz-title" id="bizTitle">{business?.name || 'Qrivo'}</h1>
-      <p class="biz-tagline" id="bizTagline">{business?.tagline || 'Smart QR Counter Cards for Google Reviews'}</p>
+      <p class="biz-location" id="bizLocation" hidden={!businessLocation}>{businessLocation}</p>
+      <p class="biz-category" id="bizCategory" hidden={!businessCategoryLabel}>{businessCategoryLabel}</p>
 
       <!-- 5-Star Experience Rating Bar (Google review CTA) -->
       <div class="rating-prompt-card">
@@ -157,6 +191,7 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
 
 <script>
   import { DatabaseService } from '../lib/supabase';
+  import { businessCategory, businessLocationLine } from '../lib/seo';
   import type { Business } from '../types';
 
   const slug = 'qrivo';
@@ -167,7 +202,8 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
 
   const bizLogoImg = document.getElementById('bizLogoImg') as HTMLImageElement;
   const bizTitle = document.getElementById('bizTitle');
-  const bizTagline = document.getElementById('bizTagline');
+  const bizLocation = document.getElementById('bizLocation');
+  const bizCategory = document.getElementById('bizCategory');
   const customMessage = document.getElementById('customMessage');
 
   const googleCtaBtn = document.getElementById('googleCtaBtn') as HTMLAnchorElement;
@@ -213,7 +249,16 @@ const pageTitle = `${business.name} | Smart QR Counter Cards & Reviews`;
       bizLogoImg.alt = biz.name;
     }
     if (bizTitle) bizTitle.textContent = biz.name;
-    if (bizTagline) bizTagline.textContent = biz.tagline || 'Smart QR Counter Cards for Google Reviews';
+    if (bizLocation) {
+      const location = businessLocationLine(biz);
+      bizLocation.textContent = location;
+      bizLocation.hidden = !location;
+    }
+    if (bizCategory) {
+      const category = businessCategory(biz);
+      bizCategory.textContent = category;
+      bizCategory.hidden = !category;
+    }
 
     if (customMessage && biz.custom_message) {
       customMessage.textContent = biz.custom_message;

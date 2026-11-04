@@ -4,7 +4,10 @@ import { fileURLToPath } from 'node:url';
 import { loadEnv } from 'vite';
 
 import cloudflare from '@astrojs/cloudflare';
+import sitemap from '@astrojs/sitemap';
 import imagekit from '@imagekit/astro/integration';
+
+const SITE_URL = 'https://qrivo.amazementtech521.workers.dev';
 
 // ImageKit is optional: when no URL endpoint is configured the integration is
 // skipped so local builds keep working. Uploads still need the API keys (see
@@ -14,9 +17,24 @@ const imagekitUrlEndpoint = (process.env.IMAGEKIT_URL_ENDPOINT || env.IMAGEKIT_U
 
 // https://astro.build/config
 export default defineConfig({
-  integrations: imagekitUrlEndpoint ? [imagekit({ urlEndpoint: imagekitUrlEndpoint })] : [],
+  site: SITE_URL,
+
+  integrations: [
+    sitemap({
+      filter: page => !page.includes('/admin') && !page.includes('/s/') && !page.includes('/card-test-page'),
+    }),
+    ...(imagekitUrlEndpoint ? [imagekit({ urlEndpoint: imagekitUrlEndpoint })] : []),
+  ],
 
   vite: {
+    // @imagekit/astro's image service is only pulled in once the integration
+    // renders. Letting Vite discover it mid-session forces a re-optimization
+    // that invalidates the SSR worker's already-loaded chunks on Windows
+    // ("The file does not exist ... deps_ssr/base-*.js"). Serving it directly
+    // keeps the optimizer stable during `astro dev`.
+    optimizeDeps: {
+      exclude: ['@imagekit/astro/image-service'],
+    },
     // `sharp` is a native Node module used only by /api/qr-card. Keeping it
     // external stops Vite from trying to bundle it for Cloudflare Workers;
     // the route falls back to a 501 there and the browser renders the card.

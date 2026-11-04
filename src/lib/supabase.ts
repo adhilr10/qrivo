@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { generateShortCode } from './short-links';
-import type { Business, ShortLink } from '../types';
+import type { Business, QrExpense, QrSale, ShortLink } from '../types';
 
 export interface SupabaseConfig {
   url: string;
@@ -14,6 +14,43 @@ export class SupabaseConfigurationError extends Error {
     this.name = 'SupabaseConfigurationError';
   }
 }
+
+/**
+ * Thrown when the sales/expense tables have not been created yet. The admin UI
+ * turns this into a "run the SQL" banner instead of a blank screen.
+ */
+export class MissingTableError extends Error {
+  readonly table: string;
+
+  constructor(table: string) {
+    super(
+      `The "${table}" table does not exist in Supabase yet. ` +
+        'Open SQL in the Admin Portal, run the latest schema, then refresh.',
+    );
+    this.name = 'MissingTableError';
+    this.table = table;
+  }
+}
+
+function isMissingTable(error: { code?: string; message?: string } | null | undefined): boolean {
+  if (!error) return false;
+  return (
+    error.code === 'PGRST205' ||
+    error.code === '42P01' ||
+    /could not find the table|relation .* does not exist/i.test(error.message || '')
+  );
+}
+
+function roundMoney(value: number): number {
+  return Math.round((Number(value) || 0) * 100) / 100;
+}
+
+function todayIso(): string {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 
 /** Public browser credentials only. Never expose a service-role key here. */
 export function getSupabaseConfig(): SupabaseConfig {
@@ -349,7 +386,9 @@ export const DatabaseService = {
       slug: business.slug.trim().toLowerCase(),
       logo_url: business.logo_url || '',
       brand_color: business.brand_color || '#2563eb',
-      tagline: business.tagline || '',
+      category: business.category || business.tagline || '',
+      place_name: business.place_name || '',
+      road: business.road || '',
       google_review_url: business.google_review_url || '',
       whatsapp_number: business.whatsapp_number || '',
       whatsapp_message: business.whatsapp_message || '',
@@ -372,10 +411,11 @@ export const DatabaseService = {
       : database.from('businesses').insert(values);
     let { data, error } = await query.select().single();
 
-    // Fallback if PostgREST schema cache hasn't refreshed for whatsapp_message yet
-    if (error && error.message && error.message.includes('whatsapp_message')) {
-      console.warn('Retrying save without whatsapp_message due to Supabase schema cache delay:', error.message);
-      const { whatsapp_message, ...fallbackValues } = values;
+    // Fallback if PostgREST's schema cache hasn't picked up the newer optional
+    // columns yet (whatsapp_message, place_name, road, category).
+    if (error && error.message && /(whatsapp_message|place_name|road|category)/.test(error.message)) {
+      console.warn('Retrying save without newer optional columns due to Supabase schema cache delay:', error.message);
+      const { whatsapp_message, place_name, road, category, ...fallbackValues } = values;
       const fallbackQuery = business.id
         ? database.from('businesses').update(fallbackValues).eq('id', business.id)
         : database.from('businesses').insert(fallbackValues);
@@ -402,6 +442,109 @@ export const DatabaseService = {
     }
 
     return applyShortLinkAssignment(data as Business, requestedCode, wantsUnassign);
+  },
+
+  // ── Sales + expenses (Money tab) ────────────────────────────────────────
+  async getSales(): Promise<QrSale[]> {
+    const { data, error } = await requireSupabase()
+      .from('qr_sales')
+      .select('*')
+      .order('sale_date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      if (isMissingTable(error)) throw new MissingTableError('qr_sales');
+      throw error;
+    }
+    return (data ?? []) as QrSale[];
+  },
+
+  async saveSale(sale: Partial<QrSale> & { business_name: string }): Promise<QrSale> {
+    const database = requireSupabase();
+    const { email } = await getAuthenticatedUser();
+    const quantity = Math.max(1, Math.floor(Number(sale.quantity) || 1));
+    const unitPrice = Math.max(0, Number(sale.unit_price) || 0);
+    const unitCost = Math.max(0, Number(sale.unit_cost) || 0);
+    const values = {
+      business_id: sale.business_id || null,
+      business_name: sale.business_name.trim(),
+      quantity,
+      unit_price: roundMoney(unitPrice),
+      unit_cost: roundMoney(unitCost),
+      // Snapshot the totals: changing the default price later must not rewrite
+      // the profit of sales that already happened.
+      amount: roundMoney(quantity * unitPrice),
+      cost: roundMoney(quantity * unitCost),
+      status: sale.status === 'pending' ? 'pending' : 'paid',
+      sale_date: sale.sale_date || todayIso(),
+      note: (sale.note || '').trim(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const query = sale.id
+      ? database.from('qr_sales').update(values).eq('id', sale.id)
+      : database.from('qr_sales').insert({ ...values, owner_email: email || '' });
+    const { data, error } = await query.select().single();
+
+    if (error) {
+      if (isMissingTable(error)) throw new MissingTableError('qr_sales');
+      throw error;
+    }
+    return data as QrSale;
+  },
+
+  async deleteSale(id: string): Promise<void> {
+    const { error } = await requireSupabase().from('qr_sales').delete().eq('id', id);
+    if (error) {
+      if (isMissingTable(error)) throw new MissingTableError('qr_sales');
+      throw error;
+    }
+  },
+
+  async getExpenses(): Promise<QrExpense[]> {
+    const { data, error } = await requireSupabase()
+      .from('qr_expenses')
+      .select('*')
+      .order('expense_date', { ascending: false })
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      if (isMissingTable(error)) throw new MissingTableError('qr_expenses');
+      throw error;
+    }
+    return (data ?? []) as QrExpense[];
+  },
+
+  async saveExpense(expense: Partial<QrExpense> & { title: string }): Promise<QrExpense> {
+    const database = requireSupabase();
+    const { email } = await getAuthenticatedUser();
+    const values = {
+      title: expense.title.trim(),
+      category: (expense.category || 'Other').trim(),
+      amount: roundMoney(Math.max(0, Number(expense.amount) || 0)),
+      expense_date: expense.expense_date || todayIso(),
+      note: (expense.note || '').trim(),
+      updated_at: new Date().toISOString(),
+    };
+
+    const query = expense.id
+      ? database.from('qr_expenses').update(values).eq('id', expense.id)
+      : database.from('qr_expenses').insert({ ...values, owner_email: email || '' });
+    const { data, error } = await query.select().single();
+
+    if (error) {
+      if (isMissingTable(error)) throw new MissingTableError('qr_expenses');
+      throw error;
+    }
+    return data as QrExpense;
+  },
+
+  async deleteExpense(id: string): Promise<void> {
+    const { error } = await requireSupabase().from('qr_expenses').delete().eq('id', id);
+    if (error) {
+      if (isMissingTable(error)) throw new MissingTableError('qr_expenses');
+      throw error;
+    }
   },
 
   async deleteBusiness(id: string): Promise<boolean> {

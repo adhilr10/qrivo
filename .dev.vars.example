@@ -1,0 +1,10 @@
+# Local Cloudflare Worker secrets for `npm run preview` / `wrangler dev`.
+# Copy to `.dev.vars` (git-ignored) and fill in real values.
+# For production run: npx wrangler secret put IMAGEKIT_PRIVATE_KEY
+
+PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+
+IMAGEKIT_PUBLIC_KEY=your-public-key
+IMAGEKIT_PRIVATE_KEY=your-private-key
+IMAGEKIT_URL_ENDPOINT=https://ik.imagekit.io/your_imagekit_id

@@ -14,7 +14,9 @@ CREATE TABLE IF NOT EXISTS public.businesses (
     slug VARCHAR(100) UNIQUE NOT NULL,
     logo_url TEXT DEFAULT '',
     brand_color VARCHAR(20) DEFAULT '#2563eb',
-    tagline VARCHAR(255) DEFAULT '',
+    category VARCHAR(120) DEFAULT '',
+    place_name VARCHAR(120) DEFAULT '',
+    road VARCHAR(160) DEFAULT '',
     google_review_url TEXT NOT NULL,
     whatsapp_number VARCHAR(50) DEFAULT '',
     whatsapp_message TEXT DEFAULT 'Hi! I visited your business and would like to connect.',
@@ -34,6 +36,9 @@ CREATE TABLE IF NOT EXISTS public.businesses (
 ALTER TABLE public.businesses
     ADD COLUMN IF NOT EXISTS whatsapp_message TEXT DEFAULT 'Hi! I visited your business and would like to connect.',
     ADD COLUMN IF NOT EXISTS custom_message TEXT DEFAULT 'Thank you for your visit! Your review helps our local team grow.',
+    ADD COLUMN IF NOT EXISTS place_name VARCHAR(120) DEFAULT '',
+    ADD COLUMN IF NOT EXISTS road VARCHAR(160) DEFAULT '',
+    ADD COLUMN IF NOT EXISTS category VARCHAR(120) DEFAULT '',
     ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     ADD COLUMN IF NOT EXISTS owner_email TEXT DEFAULT '';
 
@@ -115,6 +120,84 @@ CREATE POLICY "Admins manage short links"
 
 CREATE POLICY "Service role full access on short links"
     ON public.short_links
+    FOR ALL
+    TO service_role
+    USING (true)
+    WITH CHECK (true);
+
+-- ==============================================================================
+-- 3. Money: QR sales and business expenses (admin only — never public)
+-- ==============================================================================
+
+CREATE TABLE IF NOT EXISTS public.qr_sales (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID REFERENCES public.businesses(id) ON DELETE SET NULL,
+    business_name TEXT NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    unit_price NUMERIC(12,2) NOT NULL DEFAULT 400,
+    unit_cost NUMERIC(12,2) NOT NULL DEFAULT 55,
+    -- Snapshot of quantity * price / cost so history never changes when the
+    -- default sale price is edited later.
+    amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+    cost NUMERIC(12,2) NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'paid' CHECK (status IN ('paid', 'pending')),
+    sale_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    note TEXT DEFAULT '',
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    owner_email TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_qr_sales_date ON public.qr_sales (sale_date DESC);
+CREATE INDEX IF NOT EXISTS idx_qr_sales_status ON public.qr_sales (status);
+
+CREATE TABLE IF NOT EXISTS public.qr_expenses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    category TEXT DEFAULT 'Other',
+    amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+    expense_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    note TEXT DEFAULT '',
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    owner_email TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_qr_expenses_date ON public.qr_expenses (expense_date DESC);
+
+-- Financial data is private: only signed-in admins may read or change it.
+ALTER TABLE public.qr_sales ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.qr_expenses ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins manage sales" ON public.qr_sales;
+CREATE POLICY "Admins manage sales"
+    ON public.qr_sales
+    FOR ALL
+    TO authenticated
+    USING (true)
+    WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Service role full access on sales" ON public.qr_sales;
+CREATE POLICY "Service role full access on sales"
+    ON public.qr_sales
+    FOR ALL
+    TO service_role
+    USING (true)
+    WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Admins manage expenses" ON public.qr_expenses;
+CREATE POLICY "Admins manage expenses"
+    ON public.qr_expenses
+    FOR ALL
+    TO authenticated
+    USING (true)
+    WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Service role full access on expenses" ON public.qr_expenses;
+CREATE POLICY "Service role full access on expenses"
+    ON public.qr_expenses
     FOR ALL
     TO service_role
     USING (true)

@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+
+# Admin and API surfaces should never be indexed.
+Disallow: /admin
+Disallow: /admin/
+Disallow: /api/
+Disallow: /card-test-page
+
+# Printed QR codes redirect to the canonical /<slug> page.
+Disallow: /s/
+
+Sitemap: https://qrivo.amazementtech521.workers.dev/sitemap-index.xml

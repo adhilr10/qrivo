@@ -15,6 +15,7 @@ interface Props {
     | 'sparkles'
     | 'settings'
     | 'bar-chart'
+    | 'receipt'
     | 'plus'
     | 'edit'
     | 'trash'
@@ -143,6 +144,15 @@ const { name, size = 20, class: className = '', fill = 'currentColor' } = Astro.
     <line x1="12" y1="20" x2="12" y2="10"></line>
     <line x1="18" y1="20" x2="18" y2="4"></line>
     <line x1="6" y1="20" x2="6" y2="16"></line>
+  </svg>
+)}
+
+{name === 'receipt' && (
+  <svg class={className} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={fill} stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1z"></path>
+    <path d="M8 7h8"></path>
+    <path d="M8 11h8"></path>
+    <path d="M8 15h5"></path>
   </svg>
 )}
 

@@ -3,7 +3,7 @@ import Layout from '../../layouts/Layout.astro';
 import Icon from '../../components/Icon.astro';
 ---
 
-<Layout title="Qrivo Admin | Manage Businesses & Counter QR Codes" hideNav={false}>
+<Layout title="Qrivo Admin | Manage Businesses & Counter QR Codes" hideNav={false} noindex={true}>
   <div class="admin-page-container">
 
     <!-- ======================================================================
@@ -47,6 +47,14 @@ import Icon from '../../components/Icon.astro';
           <Icon name="shield-check" size={17} />
           <span>Businesses (<span id="bizCountBadge">0</span>)</span>
         </button>
+        <button class="tab-btn" data-tab="recordsTab">
+          <Icon name="receipt" size={17} />
+          <span>Sales &amp; Expenses</span>
+        </button>
+        <button class="tab-btn" data-tab="moneyTab">
+          <Icon name="bar-chart" size={17} />
+          <span>Money</span>
+        </button>
         <button class="tab-btn" data-tab="qrStudioTab">
           <Icon name="qrcode" size={17} />
           <span>QR Codes</span>
@@ -73,6 +81,25 @@ import Icon from '../../components/Icon.astro';
               class="form-input search-input"
             />
           </div>
+          <div class="biz-pay-filter" id="bizPayFilter" role="group" aria-label="Filter businesses by payment">
+            <button type="button" class="biz-pay-filter-btn is-active" data-pay-filter="all">
+              All <span class="biz-pay-count" id="bizPayAllCount">0</span>
+            </button>
+            <button type="button" class="biz-pay-filter-btn" data-pay-filter="paid">
+              Paid <span class="biz-pay-count" id="bizPayPaidCount">0</span>
+            </button>
+            <button type="button" class="biz-pay-filter-btn" data-pay-filter="unpaid">
+              Not paid <span class="biz-pay-count" id="bizPayUnpaidCount">0</span>
+            </button>
+          </div>
+          <button
+            type="button"
+            id="fixSlugsBtn"
+            class="btn btn-outline btn-sm"
+            title="Rewrite every business URL from name, category, area and road"
+          >
+            Fix URLs
+          </button>
           <div class="search-tip hide-sm">
             💡 <em>Printed /s/ links never change — reassign after rejection, no reprint.</em>
           </div>
@@ -111,9 +138,11 @@ import Icon from '../../components/Icon.astro';
             </div>
             <button type="button" id="qrBulkCreateBtn" class="btn btn-primary qr-bulk-submit">
               <Icon name="plus" size={16} />
-              <span>Create QR codes</span>
+              <span id="qrBulkCreateLabel">Create QR codes</span>
             </button>
           </div>
+
+          <p class="qr-bulk-cost" id="qrBulkCostHint"></p>
 
           <div id="qrBulkResult" class="qr-bulk-result" hidden></div>
 
@@ -193,6 +222,124 @@ import Icon from '../../components/Icon.astro';
         </div>
       </div>
 
+      <!-- ── TAB 3: MONEY (summary + chart) ─────────────────────────────── -->
+      <div id="moneyTab" class="tab-content" style="display:none;">
+
+        <div class="money-summary-grid">
+          <div class="money-stat money-stat-revenue">
+            <span class="money-stat-label">Revenue collected</span>
+            <span class="money-stat-value" id="statRevenue">₹0</span>
+            <span class="money-stat-hint">Paid QR sales</span>
+          </div>
+          <div class="money-stat money-stat-cost">
+            <span class="money-stat-label">Making cost</span>
+            <span class="money-stat-value" id="statMakingCost">₹0</span>
+            <span class="money-stat-hint">Sold QR cost + stock batches</span>
+          </div>
+          <div class="money-stat money-stat-expense">
+            <span class="money-stat-label">Other expenses</span>
+            <span class="money-stat-value" id="statExpenses">₹0</span>
+            <span class="money-stat-hint">Travel, ads, packaging…</span>
+          </div>
+          <div class="money-stat money-stat-profit">
+            <span class="money-stat-label">Profit</span>
+            <span class="money-stat-value" id="statProfit">₹0</span>
+            <span class="money-stat-hint">Revenue − cost − expenses</span>
+          </div>
+          <div class="money-stat">
+            <span class="money-stat-label">QR stands sold</span>
+            <span class="money-stat-value" id="statUnits">0</span>
+            <span class="money-stat-hint">Paid units</span>
+          </div>
+          <div class="money-stat money-stat-pending">
+            <span class="money-stat-label">Payment pending</span>
+            <span class="money-stat-value" id="statPending">₹0</span>
+            <span class="money-stat-hint">Not collected yet</span>
+          </div>
+        </div>
+
+        <div class="glass-card money-rate-card">
+          <div class="money-rate-copy">
+            <h2 class="section-title" style="margin-bottom:.15rem;">Default pricing</h2>
+            <p class="section-desc" style="margin-bottom:0;">
+              New sales start with these numbers. Sales already saved keep their own price, so old profit never changes.
+            </p>
+          </div>
+          <div class="money-rate-inputs">
+            <label class="form-group">
+              <span class="form-label">Sale price / QR (₹)</span>
+              <input type="number" id="defaultSalePrice" class="form-input" min="0" step="1" value="400" />
+            </label>
+            <label class="form-group">
+              <span class="form-label">Making cost / QR (₹)</span>
+              <input type="number" id="defaultUnitCost" class="form-input" min="0" step="1" value="55" />
+            </label>
+            <span class="money-rate-margin" id="defaultMargin">Profit ₹345 per QR</span>
+          </div>
+        </div>
+
+        <div class="glass-card money-chart-card">
+          <div class="money-chart-head">
+            <div>
+              <h2 class="section-title" style="margin-bottom:.15rem;">Money trend</h2>
+              <p class="section-desc" style="margin-bottom:0;">Sales against making cost + expenses, month by month.</p>
+            </div>
+            <select id="moneyChartMonths" class="form-select money-chart-range" aria-label="Chart range">
+              <option value="6">Last 6 months</option>
+              <option value="12">Last 12 months</option>
+            </select>
+          </div>
+          <div id="moneyChart" class="money-chart"></div>
+          <div class="money-legend">
+            <span><i class="money-dot money-dot-revenue"></i>Revenue</span>
+            <span><i class="money-dot money-dot-spend"></i>Cost + expenses</span>
+            <span><i class="money-dot money-dot-profit"></i>Profit</span>
+          </div>
+        </div>
+
+        <div class="money-records-cta">
+          <button type="button" class="btn btn-outline" id="goRecordsBtn">
+            <Icon name="receipt" size={16} />
+            <span>View sales &amp; expense records</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- ── TAB 4: SALES & EXPENSES ───────────────────────────────────── -->
+      <div id="recordsTab" class="tab-content" style="display:none;">
+
+        <div class="glass-card money-panel money-list-panel">
+          <div class="money-panel-head">
+            <h2 class="section-title" style="margin-bottom:0;">
+              Sales <span id="salesCountBadge" class="money-count">0</span>
+            </h2>
+            <div class="money-panel-actions">
+              <select id="salesFilter" class="form-select money-filter" aria-label="Filter sales">
+                <option value="all">All payments</option>
+                <option value="paid">Paid only</option>
+                <option value="pending">Pending only</option>
+              </select>
+              <button type="button" id="openSaleModalBtn" class="btn btn-primary btn-sm">+ Add sale</button>
+            </div>
+          </div>
+          <div id="salesList" class="money-list">
+            <div class="money-empty">No sales recorded yet.</div>
+          </div>
+        </div>
+
+        <div class="glass-card money-panel money-list-panel">
+          <div class="money-panel-head">
+            <h2 class="section-title" style="margin-bottom:0;">
+              Expenses <span id="expensesCountBadge" class="money-count">0</span>
+            </h2>
+            <button type="button" id="openExpenseModalBtn" class="btn btn-primary btn-sm">+ Add expense</button>
+          </div>
+          <div id="expenseList" class="money-list">
+            <div class="money-empty">No expenses recorded yet.</div>
+          </div>
+        </div>
+      </div>
+
     </div><!-- /.container -->
 
     <!-- ======================================================================
@@ -203,6 +350,14 @@ import Icon from '../../components/Icon.astro';
         <span class="mobile-tab-icon">🏢</span>
         <span class="mobile-tab-label">Shops</span>
         <span class="mobile-tab-badge" id="mobileBizBadge">0</span>
+      </button>
+      <button class="mobile-tab-btn" data-tab="recordsTab">
+        <span class="mobile-tab-icon">🧾</span>
+        <span class="mobile-tab-label">Records</span>
+      </button>
+      <button class="mobile-tab-btn" data-tab="moneyTab">
+        <span class="mobile-tab-icon">📈</span>
+        <span class="mobile-tab-label">Money</span>
       </button>
       <button class="mobile-tab-btn" data-tab="qrStudioTab">
         <span class="mobile-tab-icon">⬛</span>
@@ -239,11 +394,16 @@ import Icon from '../../components/Icon.astro';
                 <span>Counter URL Slug *</span>
                 <span id="slugAvailabilityBadge" style="font-size:.75rem;color:#34d399;">Available</span>
               </label>
-              <div style="display:flex;align-items:center;">
-                <span class="slug-prefix">/</span>
-                <input type="text" id="formSlug" class="form-input slug-input" placeholder="bella-italia" required />
+              <div class="slug-row">
+                <div class="slug-field">
+                  <span class="slug-prefix">/</span>
+                  <input type="text" id="formSlug" class="form-input slug-input" placeholder="bella-italia-restaurant-mg-road" required />
+                </div>
+                <button type="button" id="descriptiveSlugBtn" class="btn btn-outline btn-sm slug-descriptive-btn" title="Build from name, category, area and road">
+                  Auto
+                </button>
               </div>
-              <span class="form-helper">Printed QR codes use the shortener link below, not this slug.</span>
+              <span class="form-helper">Built from name + category + area + road. Printed QR codes use the shortener link, so changing it never needs a reprint.</span>
             </div>
 
             <div class="form-group" id="qrAssignGroup">
@@ -298,9 +458,39 @@ import Icon from '../../components/Icon.astro';
             </div>
 
             <div class="form-group">
-              <label class="form-label" for="formTagline">Short Tagline</label>
-              <input type="text" id="formTagline" class="form-input" placeholder="e.g. Wood-fired pizza & handcrafted pasta" />
+              <label class="form-label" for="formCategory">Shop Category</label>
+              <input type="text" id="formCategory" class="form-input" list="shopCategoryOptions" placeholder="e.g. Restaurant, Bakery, Salon" />
+              <datalist id="shopCategoryOptions">
+                <option value="Restaurant"></option>
+                <option value="Cafe"></option>
+                <option value="Bakery"></option>
+                <option value="Sweet Shop"></option>
+                <option value="Grocery Store"></option>
+                <option value="Salon"></option>
+                <option value="Spa"></option>
+                <option value="Gym"></option>
+                <option value="Clinic"></option>
+                <option value="Pharmacy"></option>
+                <option value="Hotel"></option>
+                <option value="Retail Store"></option>
+                <option value="Service Center"></option>
+              </datalist>
+              <span class="form-helper">What kind of shop is this? Used in Google title and description.</span>
             </div>
+
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label" for="formPlaceName">Area / Locality</label>
+                <input type="text" id="formPlaceName" class="form-input" placeholder="e.g. Connaught Place" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="formRoad">Road / Street</label>
+                <input type="text" id="formRoad" class="form-input" placeholder="e.g. MG Road" />
+              </div>
+            </div>
+            <span class="form-helper" style="display:block;margin-top:-.5rem;margin-bottom:1rem;">
+              Optional — shown under the shop name so customers recognise the location.
+            </span>
 
             <div class="form-group">
               <label class="form-label" for="formGoogleUrl">
@@ -373,7 +563,8 @@ import Icon from '../../components/Icon.astro';
                   <img id="prevImg" src="" class="preview-logo-img" />
                 </div>
                 <div id="prevName" style="font-size:1.1rem;font-weight:800;color:#0a0a0a;">Business Name</div>
-                <div id="prevTagline" style="font-size:.75rem;color:#4a4a4a;margin-bottom:.75rem;">Tagline</div>
+                <div id="prevLocation" style="font-size:.68rem;color:#6b7280;font-weight:600;margin-bottom:.15rem;" hidden>Area · Road</div>
+                <div id="prevCategory" style="font-size:.75rem;color:#4a4a4a;margin-bottom:.75rem;">Shop category</div>
                 <div style="background:#fff8e7;border:2px solid #0a0a0a;border-radius:6px;padding:.5rem;margin-bottom:.6rem;">
                   <div style="display:flex;align-items:center;justify-content:center;gap:.3rem;font-size:.7rem;color:#0a0a0a;font-weight:700;margin-bottom:.2rem;"><span style="color:#4285f4;font-weight:900;">G</span>How was your experience today?</div>
                   <div style="color:#0a0a0a;font-size:1rem;letter-spacing:2px;">★★★★★</div>
@@ -582,7 +773,9 @@ CREATE TABLE IF NOT EXISTS public.businesses (
     slug VARCHAR(100) UNIQUE NOT NULL,
     logo_url TEXT DEFAULT '',
     brand_color VARCHAR(20) DEFAULT '#2563eb',
-    tagline VARCHAR(255) DEFAULT '',
+    category VARCHAR(120) DEFAULT '',
+    place_name VARCHAR(120) DEFAULT '',
+    road VARCHAR(160) DEFAULT '',
     google_review_url TEXT NOT NULL,
     whatsapp_number VARCHAR(50) DEFAULT '',
     whatsapp_message TEXT DEFAULT '',
@@ -600,6 +793,9 @@ CREATE TABLE IF NOT EXISTS public.businesses (
 ALTER TABLE public.businesses
     ADD COLUMN IF NOT EXISTS whatsapp_message TEXT DEFAULT '',
     ADD COLUMN IF NOT EXISTS custom_message TEXT DEFAULT '',
+    ADD COLUMN IF NOT EXISTS place_name VARCHAR(120) DEFAULT '',
+    ADD COLUMN IF NOT EXISTS road VARCHAR(160) DEFAULT '',
+    ADD COLUMN IF NOT EXISTS category VARCHAR(120) DEFAULT '',
     ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     ADD COLUMN IF NOT EXISTS owner_email TEXT DEFAULT '';
 
@@ -632,6 +828,51 @@ DROP POLICY IF EXISTS "Public can resolve short links" ON public.short_links;
 CREATE POLICY "Public can resolve short links" ON public.short_links FOR SELECT TO anon, authenticated USING (true);
 DROP POLICY IF EXISTS "Admins manage short links" ON public.short_links;
 CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- ── Money: QR sales ────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.qr_sales (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    business_id UUID REFERENCES public.businesses(id) ON DELETE SET NULL,
+    business_name TEXT NOT NULL,
+    quantity INTEGER NOT NULL DEFAULT 1 CHECK (quantity > 0),
+    unit_price NUMERIC(12,2) NOT NULL DEFAULT 400,
+    unit_cost NUMERIC(12,2) NOT NULL DEFAULT 55,
+    amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+    cost NUMERIC(12,2) NOT NULL DEFAULT 0,
+    status TEXT NOT NULL DEFAULT 'paid' CHECK (status IN ('paid', 'pending')),
+    sale_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    note TEXT DEFAULT '',
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    owner_email TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_qr_sales_date ON public.qr_sales (sale_date DESC);
+CREATE INDEX IF NOT EXISTS idx_qr_sales_status ON public.qr_sales (status);
+
+-- ── Money: business expenses ───────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.qr_expenses (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    category TEXT DEFAULT 'Other',
+    amount NUMERIC(12,2) NOT NULL DEFAULT 0,
+    expense_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    note TEXT DEFAULT '',
+    user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+    owner_email TEXT DEFAULT '',
+    created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_qr_expenses_date ON public.qr_expenses (expense_date DESC);
+
+-- Financial data is admin-only.
+ALTER TABLE public.qr_sales ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.qr_expenses ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins manage sales" ON public.qr_sales;
+CREATE POLICY "Admins manage sales" ON public.qr_sales FOR ALL TO authenticated USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "Admins manage expenses" ON public.qr_expenses;
+CREATE POLICY "Admins manage expenses" ON public.qr_expenses FOR ALL TO authenticated USING (true) WITH CHECK (true);
           </textarea>
           <div style="margin-top:1.25rem;padding:1rem;background:#fffdf5;border-radius:6px;border:2.5px solid #0a0a0a;box-shadow:3px 3px 0 #0a0a0a;">
             <div style="font-size:.8125rem;font-weight:700;color:#0a0a0a;margin-bottom:.5rem;">.env</div>
@@ -645,6 +886,113 @@ CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authe
     </div>
 
     <!-- ======================================================================
+         MODAL: RECORD A SALE
+         ====================================================================== -->
+    <div id="saleModal" class="modal-backdrop" style="display:none;">
+      <div class="modal-dialog" style="max-width:560px;">
+        <div class="modal-header">
+          <h2 class="modal-title">Record a sale</h2>
+          <button type="button" class="modal-close-btn" data-money-close="saleModal">&times;</button>
+        </div>
+        <div class="money-modal-body">
+          <form id="saleForm" class="money-form">
+            <input type="hidden" id="saleId" />
+            <div class="form-group">
+              <label class="form-label" for="saleBusiness">Business (optional)</label>
+              <select id="saleBusiness" class="form-select">
+                <option value="">— Not linked / walk-in —</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="saleName">Customer / shop name *</label>
+              <input type="text" id="saleName" class="form-input" placeholder="e.g. Bella Italia" required />
+            </div>
+            <div class="money-form-grid money-form-grid-3">
+              <div class="form-group">
+                <label class="form-label" for="saleQty">QR stands</label>
+                <input type="number" id="saleQty" class="form-input" min="1" step="1" value="1" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="salePrice">Price / QR (₹)</label>
+                <input type="number" id="salePrice" class="form-input" min="0" step="1" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="saleCost">Cost / QR (₹)</label>
+                <input type="number" id="saleCost" class="form-input" min="0" step="1" />
+              </div>
+            </div>
+            <div class="money-form-grid">
+              <div class="form-group">
+                <label class="form-label" for="saleDate">Date</label>
+                <input type="date" id="saleDate" class="form-input" />
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="saleStatus">Payment</label>
+                <select id="saleStatus" class="form-select">
+                  <option value="paid">Paid</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="saleNote">Note</label>
+              <input type="text" id="saleNote" class="form-input" placeholder="Optional — e.g. paid in cash" />
+            </div>
+            <div class="money-preview" id="salePreview">Sale ₹400 · Cost ₹55 · Profit ₹345</div>
+            <button type="submit" class="btn btn-primary" id="saleSubmitBtn">Save sale</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
+         MODAL: ADD AN EXPENSE
+         ====================================================================== -->
+    <div id="expenseModal" class="modal-backdrop" style="display:none;">
+      <div class="modal-dialog" style="max-width:560px;">
+        <div class="modal-header">
+          <h2 class="modal-title">Add an expense</h2>
+          <button type="button" class="modal-close-btn" data-money-close="expenseModal">&times;</button>
+        </div>
+        <div class="money-modal-body">
+          <form id="expenseForm" class="money-form">
+            <input type="hidden" id="expenseId" />
+            <div class="form-group">
+              <label class="form-label" for="expenseTitle">What was it for? *</label>
+              <input type="text" id="expenseTitle" class="form-input" placeholder="e.g. Printing 20 stands" required />
+            </div>
+            <div class="money-form-grid">
+              <div class="form-group">
+                <label class="form-label" for="expenseCategory">Category</label>
+                <select id="expenseCategory" class="form-select">
+                  <option>Printing</option>
+                  <option>QR Making</option>
+                  <option>Travel</option>
+                  <option>Ads</option>
+                  <option>Packaging</option>
+                  <option>Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="expenseAmount">Amount (₹)</label>
+                <input type="number" id="expenseAmount" class="form-input" min="0" step="1" required />
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="expenseDate">Date</label>
+              <input type="date" id="expenseDate" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="expenseNote">Note</label>
+              <input type="text" id="expenseNote" class="form-input" placeholder="Optional" />
+            </div>
+            <button type="submit" class="btn btn-primary" id="expenseSubmitBtn">Save expense</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================================================================
          PRINTABLE TENT CARD
          ====================================================================== -->
     <div id="printableTentCard" class="print-tent-card" style="display:none;">
@@ -653,7 +1001,7 @@ CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authe
           <img id="printCardLogo" src="" style="width:100%;height:100%;object-fit:cover;" />
         </div>
         <h1 id="printCardTitle" style="font-size:1.75rem;font-weight:800;color:#000;margin-bottom:.25rem;text-transform:uppercase;">Business Name</h1>
-        <p id="printCardTagline" style="font-size:1rem;color:#4b5563;margin-bottom:1.5rem;">Specialty Service</p>
+        <p id="printCardCategory" style="font-size:1rem;color:#4b5563;margin-bottom:1.5rem;">Shop Category</p>
         <div style="font-size:2rem;color:#f59e0b;margin-bottom:1rem;letter-spacing:4px;">★★★★★</div>
         <div style="font-size:1.25rem;font-weight:800;color:#000;margin-bottom:.5rem;">RATE US ON GOOGLE</div>
         <p style="font-size:.875rem;color:#4b5563;margin-bottom:1.5rem;">Point your phone camera at the QR code below</p>
@@ -771,6 +1119,64 @@ CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authe
   font-size: 0.8125rem;
   color: #4a4a4a;
   font-weight: 500;
+}
+
+/* ── Business payment filter ─────────────────────────────────────────────── */
+.biz-pay-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem;
+  background: #ffffff;
+  border: 2.5px solid #0a0a0a;
+  border-radius: 7px;
+  box-shadow: 3px 3px 0 #0a0a0a;
+}
+
+.biz-pay-filter-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.7rem;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: #4a4a4a;
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+  white-space: nowrap;
+}
+
+.biz-pay-filter-btn:hover {
+  background: #f5f0e4;
+  color: #0a0a0a;
+}
+
+.biz-pay-filter-btn.is-active {
+  background: #0a0a0a;
+  color: #ffffff;
+}
+
+.biz-pay-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  padding: 0.05rem 0.3rem;
+  background: #f0ede4;
+  border-radius: 999px;
+  color: #0a0a0a;
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.biz-pay-filter-btn.is-active .biz-pay-count {
+  background: #f5c518;
+  color: #0a0a0a;
 }
 
 /* ── Business cards grid ─────────────────────────────────────────────────── */
@@ -939,6 +1345,13 @@ CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authe
 }
 
 .qr-bulk-submit { flex-shrink: 0; }
+
+.qr-bulk-cost {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #4a4a4a;
+}
 
 .qr-stock-toolbar {
   display: flex;
@@ -1413,8 +1826,27 @@ CREATE POLICY "Admins manage short links" ON public.short_links FOR ALL TO authe
   color: #4a4a4a;
 }
 
+.slug-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+}
+
+.slug-field {
+  display: flex;
+  align-items: stretch;
+  flex: 1;
+  min-width: 0;
+}
+
 .slug-input {
   border-radius: 0 6px 6px 0;
+  min-width: 0;
+}
+
+.slug-descriptive-btn {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .notice-banner {
@@ -1914,6 +2346,16 @@ input:checked + .slider:before { transform: translateX(22px); }
     max-width: none;
     min-width: 0;
   }
+  .biz-pay-filter {
+    flex: 1 1 100%;
+    overflow-x: auto;
+  }
+  .biz-pay-filter-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    padding: 0.4rem 0.5rem;
+    font-size: 0.74rem;
+  }
   .business-list-grid { gap: 0.85rem; }
   .section-title { font-size: 1rem; }
   .qr-panel,
@@ -2087,6 +2529,28 @@ input:checked + .slider:before { transform: translateX(22px); }
   display: block;
 }
 
+.biz-card-location {
+  font-size: 0.7rem;
+  color: #6b7280;
+  font-weight: 600;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.biz-card-category {
+  font-size: 0.62rem;
+  color: #1d4ed8;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .biz-card-no-qr {
   font-size: 0.68rem;
   color: #b45309;
@@ -2103,6 +2567,56 @@ input:checked + .slider:before { transform: translateX(22px); }
   flex-shrink: 0;
   font-size: 0.6rem !important;
   padding: 0.15rem 0.5rem !important;
+}
+
+/* Payment status (does this business own a paid QR sale?) */
+.biz-card-pay-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.biz-card-pay {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.1rem 0.45rem;
+  border: 1.75px solid #0a0a0a;
+  border-radius: 4px;
+  font-size: 0.66rem;
+  font-weight: 800;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.biz-card-pay.is-paid {
+  background: #dcfce7;
+  border-color: #15803d;
+  color: #14532d;
+}
+
+.biz-card-pay.is-pending {
+  background: #fef3c7;
+  border-color: #b45309;
+  color: #78350f;
+}
+
+.biz-card-pay.is-unsold {
+  background: #f0ede4;
+  border-color: #767676;
+  color: #4a4a4a;
+}
+
+.biz-card-pay-detail {
+  min-width: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #4a4a4a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .biz-card-owner-row {
@@ -2259,17 +2773,399 @@ input:checked + .slider:before { transform: translateX(22px); }
     grid-column: 1 / -1;
   }
 }
+
+/* ── Money tab ─────────────────────────────────────────────────────────────── */
+.money-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.money-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.85rem 0.95rem;
+  background: #ffffff;
+  border: 2.5px solid #0a0a0a;
+  border-radius: 8px;
+  box-shadow: 4px 4px 0 #0a0a0a;
+  border-top: 5px solid #0a0a0a;
+  min-width: 0;
+}
+
+.money-stat-revenue { border-top-color: #15803d; }
+.money-stat-cost { border-top-color: #b45309; }
+.money-stat-expense { border-top-color: #b91c1c; }
+.money-stat-profit { border-top-color: #1d4ed8; }
+.money-stat-pending { border-top-color: #7c3aed; }
+
+.money-stat-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #4a4a4a;
+}
+
+.money-stat-value {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0a0a0a;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  word-break: break-word;
+}
+
+.money-stat-profit .money-stat-value { color: #1d4ed8; }
+.money-stat-profit.is-negative .money-stat-value { color: #b91c1c; }
+
+.money-stat-hint {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #767676;
+}
+
+.money-rate-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1.15rem 1.25rem;
+  margin-bottom: 1.25rem;
+  background: #ffffff;
+  border: 2.5px solid #0a0a0a;
+  border-radius: 8px;
+  box-shadow: 4px 4px 0 #0a0a0a;
+}
+
+.money-rate-copy { flex: 1 1 260px; min-width: 0; }
+
+.money-rate-inputs {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.money-rate-inputs .form-group {
+  margin-bottom: 0;
+  flex: 0 1 130px;
+}
+
+.money-rate-margin {
+  align-self: center;
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #14532d;
+  background: #f0fdf4;
+  border: 2px solid #15803d;
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  white-space: nowrap;
+}
+
+.money-chart-card {
+  padding: 1.15rem 1.25rem 1rem;
+  margin-bottom: 1.25rem;
+  background: #ffffff;
+  border: 2.5px solid #0a0a0a;
+  border-radius: 8px;
+  box-shadow: 4px 4px 0 #0a0a0a;
+}
+
+.money-chart-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+
+.money-chart-range {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 140px;
+  font-size: 0.8rem;
+  padding: 0.45rem 1.9rem 0.45rem 0.6rem;
+}
+
+.money-chart {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.money-chart svg {
+  display: block;
+  width: 100%;
+  min-width: 420px;
+  height: auto;
+}
+
+.money-chart .chart-grid { stroke: #e5e1d8; stroke-width: 1; }
+.money-chart .chart-zero { stroke: #0a0a0a; stroke-width: 1.5; }
+.money-chart .chart-label { font-size: 11px; font-weight: 700; fill: #767676; font-family: inherit; }
+.money-chart .chart-month { font-size: 11px; font-weight: 700; fill: #4a4a4a; font-family: inherit; }
+
+.money-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+  margin-top: 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #4a4a4a;
+}
+
+.money-legend span { display: inline-flex; align-items: center; gap: 0.3rem; }
+
+.money-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  border: 1.5px solid #0a0a0a;
+  display: inline-block;
+}
+
+.money-dot-revenue { background: #22c55e; }
+.money-dot-spend { background: #ef4444; }
+.money-dot-profit { background: #3b82f6; }
+
+.money-panel {
+  padding: 1.15rem 1.25rem;
+  background: #ffffff;
+  border: 2.5px solid #0a0a0a;
+  border-radius: 8px;
+  box-shadow: 4px 4px 0 #0a0a0a;
+}
+
+.money-list-panel { margin-bottom: 1.25rem; }
+.money-list-panel:last-child { margin-bottom: 0; }
+
+.money-records-cta {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 1rem;
+}
+
+.money-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.9rem;
+}
+
+.money-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.money-modal-body {
+  padding: 1.25rem;
+}
+
+.money-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.money-form .form-group { margin-bottom: 0; }
+
+.money-form-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.65rem;
+}
+
+.money-form > .btn-primary { width: 100%; justify-content: center; }
+
+.money-preview {
+  padding: 0.55rem 0.7rem;
+  background: #f0fdf4;
+  border: 2px solid #15803d;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  color: #14532d;
+  text-align: center;
+}
+
+.money-preview.is-loss {
+  background: #fef2f2;
+  border-color: #b91c1c;
+  color: #991b1b;
+}
+
+.money-count {
+  display: inline-block;
+  min-width: 20px;
+  padding: 0.05rem 0.4rem;
+  border-radius: 999px;
+  background: #fff8e7;
+  border: 1.5px solid #0a0a0a;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-align: center;
+  vertical-align: middle;
+  color: #0a0a0a;
+}
+
+.money-filter {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 140px;
+  font-size: 0.78rem;
+  padding: 0.4rem 1.8rem 0.4rem 0.55rem;
+}
+
+.money-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.money-empty {
+  text-align: center;
+  padding: 1.4rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #767676;
+  background: #fffdf5;
+  border: 2px dashed #c9c4b8;
+  border-radius: 6px;
+}
+
+.money-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.65rem 0.75rem;
+  background: #fffdf5;
+  border: 2px solid #0a0a0a;
+  border-radius: 6px;
+}
+
+.money-row-main { flex: 1 1 180px; min-width: 0; }
+
+.money-row-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #0a0a0a;
+  line-height: 1.25;
+}
+
+.money-row-meta {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #767676;
+  margin-top: 0.1rem;
+}
+
+.money-row-note {
+  font-size: 0.7rem;
+  font-style: italic;
+  color: #4a4a4a;
+  margin-top: 0.1rem;
+  word-break: break-word;
+}
+
+.money-row-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.05rem;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.money-row-total {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0a0a0a;
+}
+
+.money-row-profit {
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.money-row-profit.is-up { color: #15803d; }
+.money-row-profit.is-down { color: #b91c1c; }
+
+.money-status-pill {
+  display: inline-block;
+  font-size: 0.58rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  border: 1.5px solid currentColor;
+  white-space: nowrap;
+}
+
+.money-status-pill.is-paid { color: #15803d; background: #f0fdf4; }
+.money-status-pill.is-pending { color: #b45309; background: #fef3c7; }
+
+.money-row-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+}
+
+.money-row-actions .btn {
+  font-size: 0.68rem;
+  padding: 0.28rem 0.55rem;
+}
+
+@media (min-width: 640px) {
+  .money-summary-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .money-form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .money-form-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 900px) {
+  .money-summary-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+
+@media (max-width: 639px) {
+  .money-stat-value { font-size: 1.15rem; }
+  .money-rate-inputs { width: 100%; }
+  .money-rate-inputs .form-group { flex: 1 1 120px; }
+  .money-rate-margin { align-self: flex-start; }
+  .money-records-cta .btn { width: 100%; justify-content: center; }
+  .money-row-actions { width: 100%; }
+  .money-row-actions .btn { flex: 1; }
+  .money-row-amount { width: 100%; align-items: flex-start; margin-left: 0; flex-direction: row; gap: 0.5rem; }
+  .mobile-tab-label { font-size: 0.58rem; }
+  .mobile-tab-btn { padding-left: 0.15rem; padding-right: 0.15rem; }
+}
 </style>
 
 <script>
-  import { DatabaseService, getSupabaseConfig, supabase } from '../../lib/supabase';
+  import { DatabaseService, MissingTableError, getSupabaseConfig, supabase } from '../../lib/supabase';
   import { uploadLogo } from '../../lib/imagekit';
   import { qrDestinationUrl, shortLinkUrl } from '../../lib/short-links';
   import { renderQrCardOnCanvas } from '../../lib/qr-card-client';
   import * as QRCodeLib from 'qrcode';
   import QrScanner from 'qr-scanner';
   import JSZip from 'jszip';
-  import type { Business, ShortLink } from '../../types';
+  import type { Business, QrExpense, QrSale, ShortLink } from '../../types';
 
   // ── State ──────────────────────────────────────────────────────────────
   let businesses: Business[] = [];
@@ -2277,10 +3173,17 @@ input:checked + .slider:before { transform: translateX(22px); }
   let stockGroups: Array<{ label: string; links: ShortLink[] }> = [];
   let selectedBizForQr: Business | null = null;
   let activeTabName = 'businessesTab';
+  let slugTouched = false;
   let qrScanner: QrScanner | null = null;
   let scanBusy = false;
   let pendingAssignCode = '';
   let logoUploading = false;
+  let sales: QrSale[] = [];
+  let expenses: QrExpense[] = [];
+  type BizPayFilter = 'all' | 'paid' | 'unpaid';
+  let bizPayFilter: BizPayFilter = 'all';
+  let moneySettings = { salePrice: 400, unitCost: 55 };
+  const MONEY_SETTINGS_KEY = 'qrivo.money.settings';
   const RESERVED_SLUGS = new Set(['s', 'admin', 'login', '404']);
 
   const DEFAULT_LOGO_URL = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop&q=80';
@@ -2341,6 +3244,10 @@ input:checked + .slider:before { transform: translateX(22px); }
   const mobileBizBadge    = document.getElementById('mobileBizBadge');
   const businessListContainer = document.getElementById('businessListContainer');
   const searchBizInput    = document.getElementById('searchBizInput') as HTMLInputElement;
+  const bizPayAllCount    = document.getElementById('bizPayAllCount');
+  const bizPayPaidCount   = document.getElementById('bizPayPaidCount');
+  const bizPayUnpaidCount = document.getElementById('bizPayUnpaidCount');
+  const fixSlugsBtn       = document.getElementById('fixSlugsBtn') as HTMLButtonElement | null;
 
   const tabButtons  = document.querySelectorAll('.tab-btn, .mobile-tab-btn');
   const tabContents = document.querySelectorAll('.tab-content');
@@ -2356,6 +3263,7 @@ input:checked + .slider:before { transform: translateX(22px); }
   const formBizId          = document.getElementById('formBizId') as HTMLInputElement;
   const formName           = document.getElementById('formName') as HTMLInputElement;
   const formSlug           = document.getElementById('formSlug') as HTMLInputElement;
+  const descriptiveSlugBtn = document.getElementById('descriptiveSlugBtn');
   const formLogoUrl        = document.getElementById('formLogoUrl') as HTMLInputElement;
   const formLogoFile       = document.getElementById('formLogoFile') as HTMLInputElement;
   const logoUploadBtn      = document.getElementById('logoUploadBtn') as HTMLButtonElement;
@@ -2365,7 +3273,9 @@ input:checked + .slider:before { transform: translateX(22px); }
   const logoUploadStatus   = document.getElementById('logoUploadStatus');
   const formBrandColor     = document.getElementById('formBrandColor') as HTMLInputElement;
   const formBrandColorText = document.getElementById('formBrandColorText') as HTMLInputElement;
-  const formTagline        = document.getElementById('formTagline') as HTMLInputElement;
+  const formCategory       = document.getElementById('formCategory') as HTMLInputElement;
+  const formPlaceName      = document.getElementById('formPlaceName') as HTMLInputElement;
+  const formRoad           = document.getElementById('formRoad') as HTMLInputElement;
   const formGoogleUrl      = document.getElementById('formGoogleUrl') as HTMLInputElement;
   const formWaNumber       = document.getElementById('formWaNumber') as HTMLInputElement;
   const formWaMessage      = document.getElementById('formWaMessage') as HTMLInputElement;
@@ -2384,6 +3294,8 @@ input:checked + .slider:before { transform: translateX(22px); }
   const qrBulkCount        = document.getElementById('qrBulkCount') as HTMLInputElement;
   const qrBulkLabel        = document.getElementById('qrBulkLabel') as HTMLInputElement;
   const qrBulkCreateBtn    = document.getElementById('qrBulkCreateBtn') as HTMLButtonElement;
+  const qrBulkCreateLabel  = document.getElementById('qrBulkCreateLabel');
+  const qrBulkCostHint     = document.getElementById('qrBulkCostHint');
   const qrBulkResult       = document.getElementById('qrBulkResult');
   const qrStockRefreshBtn  = document.getElementById('qrStockRefreshBtn');
   const qrStockDownloadAllBtn = document.getElementById('qrStockDownloadAllBtn') as HTMLButtonElement | null;
@@ -2422,7 +3334,8 @@ input:checked + .slider:before { transform: translateX(22px); }
 
   const prevImg     = document.getElementById('prevImg') as HTMLImageElement;
   const prevName    = document.getElementById('prevName');
-  const prevTagline = document.getElementById('prevTagline');
+  const prevLocation = document.getElementById('prevLocation');
+  const prevCategory = document.getElementById('prevCategory');
   const prevWa      = document.getElementById('prevWa');
   const prevMsg     = document.getElementById('prevMsg');
 
@@ -2448,9 +3361,52 @@ input:checked + .slider:before { transform: translateX(22px); }
 
   const printCardLogo    = document.getElementById('printCardLogo') as HTMLImageElement;
   const printCardTitle   = document.getElementById('printCardTitle');
-  const printCardTagline = document.getElementById('printCardTagline');
+  const printCardCategory = document.getElementById('printCardCategory');
   const printCardQrBox   = document.getElementById('printCardQrBox');
   const printCardUrl     = document.getElementById('printCardUrl');
+
+  // Money tab
+  const goRecordsBtn        = document.getElementById('goRecordsBtn');
+  const saleModal           = document.getElementById('saleModal');
+  const expenseModal        = document.getElementById('expenseModal');
+  const openSaleModalBtn    = document.getElementById('openSaleModalBtn');
+  const openExpenseModalBtn = document.getElementById('openExpenseModalBtn');
+  const statRevenue         = document.getElementById('statRevenue');
+  const statMakingCost      = document.getElementById('statMakingCost');
+  const statExpenses        = document.getElementById('statExpenses');
+  const statProfit          = document.getElementById('statProfit');
+  const statUnits           = document.getElementById('statUnits');
+  const statPending         = document.getElementById('statPending');
+  const defaultSalePriceInput = document.getElementById('defaultSalePrice') as HTMLInputElement;
+  const defaultUnitCostInput  = document.getElementById('defaultUnitCost') as HTMLInputElement;
+  const defaultMargin         = document.getElementById('defaultMargin');
+  const moneyChart          = document.getElementById('moneyChart');
+  const moneyChartMonths    = document.getElementById('moneyChartMonths') as HTMLSelectElement;
+  const saleForm            = document.getElementById('saleForm') as HTMLFormElement;
+  const saleIdInput         = document.getElementById('saleId') as HTMLInputElement;
+  const saleBusinessInput   = document.getElementById('saleBusiness') as HTMLSelectElement;
+  const saleNameInput       = document.getElementById('saleName') as HTMLInputElement;
+  const saleQtyInput        = document.getElementById('saleQty') as HTMLInputElement;
+  const salePriceInput      = document.getElementById('salePrice') as HTMLInputElement;
+  const saleCostInput       = document.getElementById('saleCost') as HTMLInputElement;
+  const saleDateInput       = document.getElementById('saleDate') as HTMLInputElement;
+  const saleStatusInput     = document.getElementById('saleStatus') as HTMLSelectElement;
+  const saleNoteInput       = document.getElementById('saleNote') as HTMLInputElement;
+  const salePreview         = document.getElementById('salePreview');
+  const saleSubmitBtn       = document.getElementById('saleSubmitBtn') as HTMLButtonElement;
+  const salesFilter         = document.getElementById('salesFilter') as HTMLSelectElement;
+  const salesList           = document.getElementById('salesList');
+  const salesCountBadge     = document.getElementById('salesCountBadge');
+  const expenseForm         = document.getElementById('expenseForm') as HTMLFormElement;
+  const expenseIdInput      = document.getElementById('expenseId') as HTMLInputElement;
+  const expenseTitleInput   = document.getElementById('expenseTitle') as HTMLInputElement;
+  const expenseCategoryInput= document.getElementById('expenseCategory') as HTMLSelectElement;
+  const expenseAmountInput  = document.getElementById('expenseAmount') as HTMLInputElement;
+  const expenseDateInput    = document.getElementById('expenseDate') as HTMLInputElement;
+  const expenseNoteInput    = document.getElementById('expenseNote') as HTMLInputElement;
+  const expenseSubmitBtn    = document.getElementById('expenseSubmitBtn') as HTMLButtonElement;
+  const expenseList         = document.getElementById('expenseList');
+  const expensesCountBadge  = document.getElementById('expensesCountBadge');
 
   // ── Data loading ────────────────────────────────────────────────────────
   async function loadData() {
@@ -2497,21 +3453,70 @@ input:checked + .slider:before { transform: translateX(22px); }
     renderBusinessesList();
     renderQrStock();
     populateQrStudio();
+
+    await loadMoneyData();
   }
 
   // ── Business cards ──────────────────────────────────────────────────────
+  // A sale is linked by id when picked from the dropdown; older manual entries
+  // only carry the name, so fall back to a name match for those.
+  function saleBelongsToBusiness(sale: QrSale, biz: Business): boolean {
+    if (sale.business_id) return sale.business_id === biz.id;
+    const saleName = (sale.business_name || '').trim().toLowerCase();
+    return saleName !== '' && saleName === (biz.name || '').trim().toLowerCase();
+  }
+
+  function businessPaymentInfo(biz: Business) {
+    const bizSales = sales.filter(sale => saleBelongsToBusiness(sale, biz));
+    const paidSales = bizSales.filter(sale => sale.status === 'paid');
+    const pendingSales = bizSales.filter(sale => sale.status === 'pending');
+    const sumBy = (rows: QrSale[], key: 'amount' | 'quantity') =>
+      rows.reduce((total, sale) => total + (Number(sale[key]) || 0), 0);
+
+    return {
+      status: (paidSales.length ? 'paid' : pendingSales.length ? 'pending' : 'unsold') as
+        | 'paid'
+        | 'pending'
+        | 'unsold',
+      paidAmount: sumBy(paidSales, 'amount'),
+      paidUnits: sumBy(paidSales, 'quantity'),
+      pendingAmount: sumBy(pendingSales, 'amount'),
+      pendingUnits: sumBy(pendingSales, 'quantity'),
+    };
+  }
+
+  function updateBizPayFilterCounts() {
+    let paidCount = 0;
+    for (const biz of businesses) {
+      if (businessPaymentInfo(biz).status === 'paid') paidCount += 1;
+    }
+    const all = businesses.length;
+    if (bizPayAllCount) bizPayAllCount.textContent = String(all);
+    if (bizPayPaidCount) bizPayPaidCount.textContent = String(paidCount);
+    if (bizPayUnpaidCount) bizPayUnpaidCount.textContent = String(all - paidCount);
+  }
+
   function renderBusinessesList(filter = '') {
     if (!businessListContainer) return;
     const q = filter.toLowerCase().trim();
-    const filtered = businesses.filter(b =>
-      b.name.toLowerCase().includes(q) ||
-      b.slug.toLowerCase().includes(q) ||
-      (b.short_code || '').toLowerCase().includes(q) ||
-      (b.owner_email || '').toLowerCase().includes(q)
-    );
+    const filtered = businesses.filter(b => {
+      const matchesSearch =
+        !q ||
+        b.name.toLowerCase().includes(q) ||
+        b.slug.toLowerCase().includes(q) ||
+        (b.short_code || '').toLowerCase().includes(q) ||
+        (b.owner_email || '').toLowerCase().includes(q);
+      if (!matchesSearch) return false;
+      if (bizPayFilter === 'all') return true;
+
+      const isPaid = businessPaymentInfo(b).status === 'paid';
+      return bizPayFilter === 'paid' ? isPaid : !isPaid;
+    });
+
+    updateBizPayFilterCounts();
 
     if (filtered.length === 0) {
-      const hint = q
+      const hint = q || bizPayFilter !== 'all'
         ? ''
         : `<p style="font-size:.8rem;margin-top:.75rem;color:#767676;font-weight:500;max-width:34rem;margin-left:auto;margin-right:auto;">
              Missing a business another admin created? Open <strong>SQL</strong> in the top bar and run the policies once — they open the workspace to every signed-in admin.
@@ -2520,7 +3525,11 @@ input:checked + .slider:before { transform: translateX(22px); }
         <div style="grid-column:1/-1;text-align:center;padding:4rem 1rem;color:#4a4a4a;">
           <div style="font-size:2.5rem;margin-bottom:.5rem;">🏢</div>
           <div style="font-size:1rem;font-weight:800;color:#0a0a0a;">No businesses found</div>
-          <p style="font-size:.875rem;margin-top:.25rem;font-weight:500;">Try adjusting your search or add a new business.</p>
+          <p style="font-size:.875rem;margin-top:.25rem;font-weight:500;">${
+            q || bizPayFilter !== 'all'
+              ? 'Try adjusting your search or payment filter.'
+              : 'Add a new business to get started.'
+          }</p>
           ${hint}
         </div>`;
       return;
@@ -2537,6 +3546,27 @@ input:checked + .slider:before { transform: translateX(22px); }
       const qrMeta = shortPath
         ? `<a href="${shortPath}" target="_blank" class="biz-card-short-link" title="Permanent QR link">${shortPath} ↗</a>`
         : `<span class="biz-card-no-qr">No QR assigned</span>`;
+      const locationLine = businessLocationLine(b.place_name, b.road);
+
+      const pay = businessPaymentInfo(b);
+      const payClass =
+        pay.status === 'paid' ? 'is-paid' : pay.status === 'pending' ? 'is-pending' : 'is-unsold';
+      const payLabel =
+        pay.status === 'paid' ? '✓ Paid' : pay.status === 'pending' ? '⏳ Pending' : 'Not paid';
+      const payDetail =
+        pay.status === 'paid'
+          ? `${formatMoney(pay.paidAmount)} · ${pay.paidUnits} QR${pay.paidUnits === 1 ? '' : 's'}${
+              pay.pendingAmount > 0 ? ` · ${formatMoney(pay.pendingAmount)} pending` : ''
+            }`
+          : pay.status === 'pending'
+            ? `${formatMoney(pay.pendingAmount)} due`
+            : 'No QR sold yet';
+      const payTitle =
+        pay.status === 'paid'
+          ? `Paid ${formatMoney(pay.paidAmount)} for ${pay.paidUnits} QR${pay.paidUnits === 1 ? '' : 's'}${pay.pendingAmount > 0 ? `; ${formatMoney(pay.pendingAmount)} still pending` : ''}`
+          : pay.status === 'pending'
+            ? `${formatMoney(pay.pendingAmount)} payment pending for ${pay.pendingUnits} QR${pay.pendingUnits === 1 ? '' : 's'}`
+            : 'No QR sale recorded for this business';
 
       return `
         <div class="biz-card-item" style="--card-brand:${b.brand_color};">
@@ -2551,6 +3581,8 @@ input:checked + .slider:before { transform: translateX(22px); }
               />
               <div class="biz-card-meta">
                 <div class="biz-card-name" title="${b.name}">${b.name}</div>
+                ${b.category || b.tagline ? `<div class="biz-card-category">${b.category || b.tagline}</div>` : ''}
+                ${locationLine ? `<div class="biz-card-location" title="${locationLine}">📍 ${locationLine}</div>` : ''}
                 ${qrMeta}
               </div>
               <span class="status-pill ${b.is_active ? 'online' : 'local'} biz-card-status">
@@ -2566,6 +3598,12 @@ input:checked + .slider:before { transform: translateX(22px); }
                 <span class="biz-card-owner-email" title="${ownerEmail}">${ownerShortName(ownerEmail) || 'Unknown admin'}</span>
               </div>
               ${created ? `<span class="biz-card-created-date">${created}</span>` : ''}
+            </div>
+
+            <!-- Payment: did this business actually buy a QR stand? -->
+            <div class="biz-card-pay-row" title="${payTitle}">
+              <span class="biz-card-pay ${payClass}">${payLabel}</span>
+              <span class="biz-card-pay-detail">${payDetail}</span>
             </div>
           </div>
 
@@ -2671,18 +3709,84 @@ input:checked + .slider:before { transform: translateX(22px); }
     renderBusinessesList((e.target as HTMLInputElement).value);
   });
 
+  document.querySelectorAll<HTMLElement>('.biz-pay-filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const value = btn.dataset.payFilter;
+      if (value !== 'all' && value !== 'paid' && value !== 'unpaid') return;
+      bizPayFilter = value;
+      document
+        .querySelectorAll<HTMLElement>('.biz-pay-filter-btn')
+        .forEach(other => other.classList.toggle('is-active', other === btn));
+      renderBusinessesList(searchBizInput?.value || '');
+    });
+  });
+
+  // Bulk-upgrade old name-only URLs. Printed /s/ codes are untouched.
+  fixSlugsBtn?.addEventListener('click', async () => {
+    const changes = businesses
+      .map(business => ({
+        business,
+        slug: descriptiveSlug(
+          business.name,
+          business.category || business.tagline || '',
+          business.place_name || '',
+          business.road || '',
+        ),
+      }))
+      .filter(({ business, slug }) => slug !== '' && slug !== business.slug);
+
+    if (changes.length === 0) {
+      alert('All business URLs are already descriptive.');
+      return;
+    }
+
+    if (!window.confirm(
+      `Update ${changes.length} business URL${changes.length === 1 ? '' : 's'} to descriptive slugs?\n\n` +
+      'Printed QR codes use /s/CODE and keep working. Only the web address changes.',
+    )) return;
+
+    const original = fixSlugsBtn.textContent;
+    fixSlugsBtn.disabled = true;
+    let done = 0;
+    const errors: string[] = [];
+
+    for (const { business, slug } of changes) {
+      fixSlugsBtn.textContent = `Updating ${done + 1}/${changes.length}…`;
+      const { short_code, short_link_error, schema_warning, ...rest } = business;
+      try {
+        await DatabaseService.saveBusiness({ ...rest, slug });
+        done += 1;
+      } catch (error) {
+        errors.push(`${business.name}: ${getSupabaseErrorMessage(error)}`);
+      }
+    }
+
+    fixSlugsBtn.textContent = original;
+    fixSlugsBtn.disabled = false;
+    await loadData();
+
+    if (errors.length > 0) {
+      alert(`Updated ${done} URL(s).\n\nCould not update:\n${errors.join('\n')}`);
+    } else {
+      alert(`Updated ${done} business URL${done === 1 ? '' : 's'}.`);
+    }
+  });
+
   // ── Modals ──────────────────────────────────────────────────────────────
   function openCreateModal() {
     if (!bizModal) return;
     if (modalTitle) modalTitle.textContent = 'Add New Business';
     formBizId.value = '';
+    slugTouched = false;
     formName.value = '';
     formSlug.value = '';
     setLogoValue('');
     setLogoStatus(LOGO_HELP_TEXT);
     formBrandColor.value = '#2563eb';
     formBrandColorText.value = '#2563eb';
-    formTagline.value = '';
+    formCategory.value = '';
+    formPlaceName.value = '';
+    formRoad.value = '';
     formGoogleUrl.value = '';
     formWaNumber.value = DEFAULT_COUNTRY_CODE;
     formWaMessage.value = DEFAULT_WA_GREETING;
@@ -2702,12 +3806,21 @@ input:checked + .slider:before { transform: translateX(22px); }
     if (modalTitle) modalTitle.textContent = `Edit — ${biz.name}`;
     formBizId.value          = biz.id;
     formName.value           = biz.name;
+    slugTouched              = true;
     formSlug.value           = biz.slug;
     setLogoValue(biz.logo_url || '');
     setLogoStatus(biz.logo_url ? 'Current logo — upload a new file to replace it.' : LOGO_HELP_TEXT);
     formBrandColor.value     = biz.brand_color || '#2563eb';
     formBrandColorText.value = biz.brand_color || '#2563eb';
-    formTagline.value        = biz.tagline || '';
+    formCategory.value       = biz.category || biz.tagline || '';
+    formPlaceName.value      = biz.place_name || '';
+    formRoad.value           = biz.road || '';
+    // Upgrade legacy name-only slugs (e.g. /chaya-kada) to descriptive ones
+    // when the form is saved. Printed QR codes use /s/CODE, so this is safe.
+    if (biz.slug === slugifyName(biz.name)) {
+      const improved = descriptiveSlug(biz.name, formCategory.value, formPlaceName.value, formRoad.value);
+      if (improved) formSlug.value = improved;
+    }
     formGoogleUrl.value      = biz.google_review_url || '';
     formWaNumber.value       = biz.whatsapp_number || DEFAULT_COUNTRY_CODE;
     formWaMessage.value      = biz.whatsapp_message || DEFAULT_WA_GREETING;
@@ -2789,7 +3902,9 @@ input:checked + .slider:before { transform: translateX(22px); }
     formQrBanner.innerHTML = '';
   }
 
-  function closeModal() { if (bizModal) bizModal.style.display = 'none'; }
+  function closeModal() {
+    if (bizModal) bizModal.style.display = 'none';
+  }
 
   openNewBizBtn?.addEventListener('click', openCreateModal);
   mobileAddBizBtn?.addEventListener('click', openCreateModal);
@@ -2799,12 +3914,30 @@ input:checked + .slider:before { transform: translateX(22px); }
   // Close modal on backdrop click
   bizModal?.addEventListener('click', e => { if (e.target === bizModal) closeModal(); });
 
-  // ── Auto-slug from name ──────────────────────────────────────────────────
-  formName?.addEventListener('input', () => {
-    if (!formBizId.value) {
-      formSlug.value = formName.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-    }
-    syncPhonePreview();
+  // ── Descriptive slug from name + category + area + road ──────────────────
+  function refreshDescriptiveSlug() {
+    formSlug.value = descriptiveSlug(
+      formName.value,
+      formCategory.value,
+      formPlaceName.value,
+      formRoad.value,
+    );
+  }
+
+  [formName, formCategory, formPlaceName, formRoad].forEach(el => {
+    el?.addEventListener('input', () => {
+      if (!formBizId.value && !slugTouched) refreshDescriptiveSlug();
+      syncPhonePreview();
+    });
+  });
+
+  formSlug?.addEventListener('input', () => {
+    slugTouched = true;
+  });
+
+  descriptiveSlugBtn?.addEventListener('click', () => {
+    slugTouched = false;
+    refreshDescriptiveSlug();
   });
 
   formBrandColor?.addEventListener('input', () => {
@@ -2826,17 +3959,29 @@ input:checked + .slider:before { transform: translateX(22px); }
     });
   });
 
-  [formName, formSlug, formLogoUrl, formTagline, formCustomMsg, formWaNumber, formIsActive]
+  [formName, formSlug, formLogoUrl, formCategory, formPlaceName, formRoad, formCustomMsg, formWaNumber, formIsActive]
     .forEach(el => el?.addEventListener('input', syncPhonePreview));
+
+  function businessLocationLine(place?: string, road?: string): string {
+    return [place, road]
+      .map(part => (part || '').trim())
+      .filter(Boolean)
+      .join(' · ');
+  }
 
   function syncPhonePreview() {
     const col     = formBrandColor.value || '#2563eb';
     const name    = formName.value || 'Business Name';
-    const tagline = formTagline.value || 'Tagline appears here';
+    const category = formCategory.value || 'Shop category appears here';
     const logo    = formLogoUrl.value || DEFAULT_LOGO_URL;
     if (prevImg)     prevImg.src          = logo;
     if (prevName)    prevName.textContent = name;
-    if (prevTagline) prevTagline.textContent = tagline;
+    if (prevLocation) {
+      const location = businessLocationLine(formPlaceName.value, formRoad.value);
+      prevLocation.textContent = location;
+      prevLocation.hidden = !location;
+    }
+    if (prevCategory) prevCategory.textContent = category;
     if (prevWa)      prevWa.style.display = normalizePhone(formWaNumber.value) ? 'block' : 'none';
     if (prevMsg)     prevMsg.textContent  = formCustomMsg.value || '';
     document.getElementById('livePhoneMockup')?.style.setProperty('--brand', col);
@@ -2934,7 +4079,9 @@ input:checked + .slider:before { transform: translateX(22px); }
       short_code:       formQrCode?.value || '',
       logo_url:         formLogoUrl.value.trim() || DEFAULT_LOGO_URL,
       brand_color:      formBrandColor.value,
-      tagline:          formTagline.value.trim(),
+      category:         formCategory.value.trim(),
+      place_name:       formPlaceName.value.trim(),
+      road:             formRoad.value.trim(),
       google_review_url:formGoogleUrl.value.trim(),
       whatsapp_number:  normalizePhone(formWaNumber.value),
       whatsapp_message: formWaMessage.value.trim() || DEFAULT_WA_GREETING,
@@ -3076,7 +4223,7 @@ input:checked + .slider:before { transform: translateX(22px); }
       });
       if (printCardLogo)    printCardLogo.src             = selectedBizForQr.logo_url || '';
       if (printCardTitle)   printCardTitle.textContent    = selectedBizForQr.name;
-      if (printCardTagline) printCardTagline.textContent  = selectedBizForQr.tagline || 'Specialty Local Service';
+      if (printCardCategory) printCardCategory.textContent = selectedBizForQr.category || selectedBizForQr.tagline || 'Shop Category';
       if (printCardQrBox)   printCardQrBox.innerHTML      = svgString;
       if (printCardUrl)     printCardUrl.textContent      = fullUrl;
       window.print();
@@ -3323,17 +4470,38 @@ input:checked + .slider:before { transform: translateX(22px); }
       return;
     }
     const label = (qrBulkLabel?.value || '').trim() || defaultBatchLabel();
-    if (qrBulkCreateBtn) { qrBulkCreateBtn.disabled = true; qrBulkCreateBtn.textContent = 'Creating…'; }
+    if (qrBulkCreateBtn) qrBulkCreateBtn.disabled = true;
+    if (qrBulkCreateLabel) qrBulkCreateLabel.textContent = 'Creating…';
 
     try {
       const created = await DatabaseService.createShortLinks(count, label);
       if (qrBulkLabel) qrBulkLabel.value = '';
       await reloadStock();
       showBulkResult(label, created);
+
+      // Printing blank stands costs money. Record it automatically against the
+      // current making cost so the Money tab always matches real spend. A
+      // failure here must never block QR creation.
+      if (created.length > 0) {
+        const unitCost = Math.max(0, Number(moneySettings.unitCost) || 0);
+        try {
+          await DatabaseService.saveExpense({
+            title: `Made ${created.length} QR ${created.length === 1 ? 'stand' : 'stands'}`,
+            category: 'QR Making',
+            amount: created.length * unitCost,
+            expense_date: todayInputValue(),
+            note: `Batch: ${label}`,
+          });
+          await loadMoneyData();
+        } catch (expenseError) {
+          console.warn('QR codes created, but the making expense could not be saved:', expenseError);
+        }
+      }
     } catch (error) {
       alert(`Could not create QR codes.\n\n${getSupabaseErrorMessage(error)}`);
     } finally {
-      if (qrBulkCreateBtn) { qrBulkCreateBtn.disabled = false; qrBulkCreateBtn.textContent = 'Create QR codes'; }
+      if (qrBulkCreateBtn) qrBulkCreateBtn.disabled = false;
+      if (qrBulkCreateLabel) qrBulkCreateLabel.textContent = 'Create QR codes';
     }
   }
 
@@ -3764,6 +4932,620 @@ input:checked + .slider:before { transform: translateX(22px); }
   glPasteInput?.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); applyReviewLink(glPasteInput.value); }
   });
+
+  // ── Money: sales, expenses, profit ──────────────────────────────────────
+  const MONEY_FORMATTER = new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 });
+
+  function formatMoney(value: number): string {
+    const amount = Number(value) || 0;
+    return `${amount < 0 ? '-' : ''}₹${MONEY_FORMATTER.format(Math.abs(amount))}`;
+  }
+
+  function formatMoneyCompact(value: number): string {
+    const amount = Number(value) || 0;
+    const abs = Math.abs(amount);
+    const sign = amount < 0 ? '-' : '';
+    if (abs >= 10000000) return `${sign}₹${(abs / 10000000).toFixed(1)}Cr`;
+    if (abs >= 100000) return `${sign}₹${(abs / 100000).toFixed(1)}L`;
+    if (abs >= 1000) return `${sign}₹${(abs / 1000).toFixed(abs >= 10000 ? 0 : 1)}k`;
+    return `${sign}₹${Math.round(abs)}`;
+  }
+
+  function todayInputValue(): string {
+    const now = new Date();
+    const pad = (value: number) => String(value).padStart(2, '0');
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  }
+
+  function formatShortDate(value?: string): string {
+    if (!value) return '';
+    const parsed = new Date(value.length === 10 ? `${value}T00:00:00` : value);
+    if (Number.isNaN(parsed.getTime())) return value;
+    return parsed.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function slugifyName(value: string): string {
+    return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  }
+
+  // /chaya-kada + Cafe + EVP + Bus Stand → /chaya-kada-cafe-evp-bus-stand
+  function descriptiveSlug(name: string, category: string, place: string, road: string): string {
+    const tokens: string[] = [];
+    const seen = new Set<string>();
+    for (const part of [name, category, place, road]) {
+      for (const token of slugifyName(part).split('-')) {
+        if (token && !seen.has(token)) {
+          seen.add(token);
+          tokens.push(token);
+        }
+      }
+    }
+    return tokens.join('-').slice(0, 90).replace(/-+$/g, '');
+  }
+
+  function loadMoneySettings() {
+    try {
+      const raw = localStorage.getItem(MONEY_SETTINGS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { salePrice?: number; unitCost?: number };
+        if (Number.isFinite(parsed.salePrice) && Number(parsed.salePrice) >= 0) {
+          moneySettings.salePrice = Number(parsed.salePrice);
+        }
+        if (Number.isFinite(parsed.unitCost) && Number(parsed.unitCost) >= 0) {
+          moneySettings.unitCost = Number(parsed.unitCost);
+        }
+      }
+    } catch { /* localStorage can be blocked; defaults still work */ }
+
+    if (defaultSalePriceInput) defaultSalePriceInput.value = String(moneySettings.salePrice);
+    if (defaultUnitCostInput) defaultUnitCostInput.value = String(moneySettings.unitCost);
+    updateDefaultMargin();
+    updateBulkCostHint();
+  }
+
+  function updateBulkCostHint() {
+    if (!qrBulkCostHint) return;
+    const count = Math.max(0, Math.floor(Number(qrBulkCount?.value) || 0));
+    const unitCost = Math.max(0, Number(moneySettings.unitCost) || 0);
+    if (count < 1) {
+      qrBulkCostHint.textContent = `Making cost ${formatMoney(unitCost)} per QR.`;
+      return;
+    }
+    qrBulkCostHint.textContent =
+      `${count} QR ${count === 1 ? 'stand' : 'stands'} × ${formatMoney(unitCost)} = ${formatMoney(count * unitCost)} added to expenses automatically.`;
+  }
+
+  function saveMoneySettings() {
+    try {
+      localStorage.setItem(MONEY_SETTINGS_KEY, JSON.stringify(moneySettings));
+    } catch { /* ignore quota/privacy errors */ }
+  }
+
+  function updateDefaultMargin() {
+    if (!defaultMargin) return;
+    const margin = moneySettings.salePrice - moneySettings.unitCost;
+    defaultMargin.textContent = margin >= 0
+      ? `Profit ${formatMoney(margin)} per QR`
+      : `Loss ${formatMoney(Math.abs(margin))} per QR`;
+    defaultMargin.style.color = margin >= 0 ? '#14532d' : '#991b1b';
+  }
+
+  function updateSalePreview() {
+    if (!salePreview) return;
+    const quantity = Math.max(1, Math.floor(Number(saleQtyInput?.value) || 1));
+    const price = Math.max(0, Number(salePriceInput?.value) || 0);
+    const cost = Math.max(0, Number(saleCostInput?.value) || 0);
+    const amount = quantity * price;
+    const totalCost = quantity * cost;
+    const profit = amount - totalCost;
+    salePreview.textContent = `Sale ${formatMoney(amount)} · Cost ${formatMoney(totalCost)} · Profit ${formatMoney(profit)}`;
+    salePreview.classList.toggle('is-loss', profit < 0);
+  }
+
+  function resetSaleForm() {
+    if (!saleForm) return;
+    saleForm.reset();
+    if (saleIdInput) saleIdInput.value = '';
+    if (saleBusinessInput) saleBusinessInput.value = '';
+    if (saleQtyInput) saleQtyInput.value = '1';
+    if (salePriceInput) salePriceInput.value = String(moneySettings.salePrice);
+    if (saleCostInput) saleCostInput.value = String(moneySettings.unitCost);
+    if (saleDateInput) saleDateInput.value = todayInputValue();
+    if (saleStatusInput) saleStatusInput.value = 'paid';
+    if (saleSubmitBtn) saleSubmitBtn.textContent = 'Save sale';
+    if (saleModal) saleModal.style.display = 'none';
+    updateSalePreview();
+  }
+
+  function resetExpenseForm() {
+    expenseForm?.reset();
+    if (expenseIdInput) expenseIdInput.value = '';
+    if (expenseDateInput) expenseDateInput.value = todayInputValue();
+    if (expenseSubmitBtn) expenseSubmitBtn.textContent = 'Save expense';
+    if (expenseModal) expenseModal.style.display = 'none';
+  }
+
+  function populateSaleBusinessSelect() {
+    if (!saleBusinessInput) return;
+    const current = saleBusinessInput.value;
+    const options = ['<option value="">— Not linked / walk-in —</option>'];
+    for (const biz of [...businesses].sort((a, b) => a.name.localeCompare(b.name))) {
+      options.push(`<option value="${biz.id}">${escapeHtml(biz.name)}</option>`);
+    }
+    saleBusinessInput.innerHTML = options.join('');
+    saleBusinessInput.value = current;
+  }
+
+  function isQrMakingExpense(expense: QrExpense): boolean {
+    return (expense.category || '').trim().toLowerCase() === 'qr making';
+  }
+
+  function moneyTotals() {
+    let revenue = 0;
+    let soldMakingCost = 0;
+    let qrMakingExpenses = 0;
+    let otherExpenses = 0;
+    let pending = 0;
+    let unitsPaid = 0;
+
+    for (const sale of sales) {
+      const amount = Number(sale.amount) || 0;
+      const cost = Number(sale.cost) || 0;
+      if (sale.status === 'pending') {
+        pending += amount;
+        continue;
+      }
+      revenue += amount;
+      soldMakingCost += cost;
+      unitsPaid += Number(sale.quantity) || 0;
+    }
+
+    for (const expense of expenses) {
+      const amount = Number(expense.amount) || 0;
+      if (isQrMakingExpense(expense)) qrMakingExpenses += amount;
+      else otherExpenses += amount;
+    }
+
+    // Blank QR batches are making cost, not general running expenses.
+    const makingCost = soldMakingCost + qrMakingExpenses;
+
+    return {
+      revenue,
+      makingCost,
+      soldMakingCost,
+      qrMakingExpenses,
+      expenseTotal: otherExpenses,
+      pending,
+      unitsPaid,
+      profit: revenue - makingCost - otherExpenses,
+    };
+  }
+
+  async function loadMoneyData() {
+    try {
+      const [saleRows, expenseRows] = await Promise.all([
+        DatabaseService.getSales(),
+        DatabaseService.getExpenses(),
+      ]);
+      sales = saleRows;
+      expenses = expenseRows;
+    } catch (error) {
+      sales = [];
+      expenses = [];
+      if (!(error instanceof MissingTableError)) {
+        console.error('Unable to load sales/expenses:', error);
+      }
+    }
+
+    populateSaleBusinessSelect();
+    renderMoney();
+    // Sales drive the Paid / Not paid badge on each business card.
+    renderBusinessesList(searchBizInput?.value || '');
+  }
+
+  function renderMoney() {
+    const totals = moneyTotals();
+
+    if (statRevenue) statRevenue.textContent = formatMoney(totals.revenue);
+    if (statMakingCost) statMakingCost.textContent = formatMoney(totals.makingCost);
+    if (statExpenses) statExpenses.textContent = formatMoney(totals.expenseTotal);
+    if (statProfit) statProfit.textContent = formatMoney(totals.profit);
+    if (statUnits) statUnits.textContent = String(totals.unitsPaid);
+    if (statPending) statPending.textContent = formatMoney(totals.pending);
+    statProfit?.parentElement?.classList.toggle('is-negative', totals.profit < 0);
+
+    renderSales();
+    renderExpenses();
+    renderMoneyChart();
+  }
+
+  function renderSales() {
+    if (!salesList) return;
+    const filter = salesFilter?.value || 'all';
+    const visible = filter === 'all' ? sales : sales.filter(sale => sale.status === filter);
+
+    if (salesCountBadge) salesCountBadge.textContent = String(sales.length);
+
+    if (visible.length === 0) {
+      salesList.innerHTML = `<div class="money-empty">${sales.length === 0 ? 'No sales recorded yet.' : 'No sales match this filter.'}</div>`;
+      return;
+    }
+
+    salesList.innerHTML = visible.map(sale => {
+      const amount = Number(sale.amount) || 0;
+      const cost = Number(sale.cost) || 0;
+      const profit = amount - cost;
+      const paid = sale.status === 'paid';
+      const name = sale.business_name || 'Walk-in customer';
+      return `
+        <div class="money-row">
+          <div class="money-row-main">
+            <div class="money-row-title">
+              ${escapeHtml(name)}
+              <span class="money-status-pill ${paid ? 'is-paid' : 'is-pending'}">${paid ? 'Paid' : 'Pending'}</span>
+            </div>
+            <div class="money-row-meta">
+              ${Number(sale.quantity) || 0} QR × ${formatMoney(Number(sale.unit_price) || 0)} ·
+              ${formatShortDate(sale.sale_date)}
+            </div>
+            ${sale.note ? `<div class="money-row-note">${escapeHtml(sale.note)}</div>` : ''}
+          </div>
+          <div class="money-row-amount">
+            <span class="money-row-total">${formatMoney(amount)}</span>
+            <span class="money-row-profit ${profit >= 0 ? 'is-up' : 'is-down'}">
+              ${paid ? `Profit ${formatMoney(profit)}` : 'Not collected'}
+            </span>
+          </div>
+          <div class="money-row-actions">
+            <button type="button" class="btn btn-outline" data-sale-edit="${sale.id}">Edit</button>
+            <button type="button" class="btn btn-outline" data-sale-delete="${sale.id}">Delete</button>
+          </div>
+        </div>`;
+    }).join('');
+
+    salesList.querySelectorAll<HTMLElement>('[data-sale-edit]').forEach(button => {
+      button.addEventListener('click', () => {
+        const sale = sales.find(item => item.id === button.dataset.saleEdit);
+        if (sale) startSaleEdit(sale);
+      });
+    });
+
+    salesList.querySelectorAll<HTMLElement>('[data-sale-delete]').forEach(button => {
+      button.addEventListener('click', () => {
+        void deleteSale(button.dataset.saleDelete || '');
+      });
+    });
+  }
+
+  function renderExpenses() {
+    if (!expenseList) return;
+    if (expensesCountBadge) expensesCountBadge.textContent = String(expenses.length);
+
+    if (expenses.length === 0) {
+      expenseList.innerHTML = '<div class="money-empty">No expenses recorded yet.</div>';
+      return;
+    }
+
+    expenseList.innerHTML = expenses.map(expense => `
+      <div class="money-row">
+        <div class="money-row-main">
+          <div class="money-row-title">
+            ${escapeHtml(expense.title)}
+            ${expense.category ? `<span class="money-status-pill is-pending">${escapeHtml(expense.category)}</span>` : ''}
+          </div>
+          <div class="money-row-meta">${formatShortDate(expense.expense_date)}</div>
+          ${expense.note ? `<div class="money-row-note">${escapeHtml(expense.note)}</div>` : ''}
+        </div>
+        <div class="money-row-amount">
+          <span class="money-row-total">${formatMoney(Number(expense.amount) || 0)}</span>
+        </div>
+        <div class="money-row-actions">
+          <button type="button" class="btn btn-outline" data-expense-edit="${expense.id}">Edit</button>
+          <button type="button" class="btn btn-outline" data-expense-delete="${expense.id}">Delete</button>
+        </div>
+      </div>`).join('');
+
+    expenseList.querySelectorAll<HTMLElement>('[data-expense-edit]').forEach(button => {
+      button.addEventListener('click', () => {
+        const expense = expenses.find(item => item.id === button.dataset.expenseEdit);
+        if (expense) startExpenseEdit(expense);
+      });
+    });
+
+    expenseList.querySelectorAll<HTMLElement>('[data-expense-delete]').forEach(button => {
+      button.addEventListener('click', () => {
+        void deleteExpense(button.dataset.expenseDelete || '');
+      });
+    });
+  }
+
+  function renderMoneyChart() {
+    if (!moneyChart) return;
+    const monthCount = Number(moneyChartMonths?.value) === 12 ? 12 : 6;
+    const now = new Date();
+    const buckets = Array.from({ length: monthCount }, (_, index) => {
+      const date = new Date(now.getFullYear(), now.getMonth() - (monthCount - 1 - index), 1);
+      return {
+        key: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
+        label: date.toLocaleDateString('en-US', { month: 'short' }),
+        revenue: 0,
+        spend: 0,
+        profit: 0,
+      };
+    });
+
+    const byMonth = new Map(buckets.map(bucket => [bucket.key, bucket]));
+    for (const sale of sales) {
+      if (sale.status === 'pending') continue;
+      const bucket = byMonth.get((sale.sale_date || '').slice(0, 7));
+      if (!bucket) continue;
+      bucket.revenue += Number(sale.amount) || 0;
+      bucket.spend += Number(sale.cost) || 0;
+    }
+    for (const expense of expenses) {
+      const bucket = byMonth.get((expense.expense_date || '').slice(0, 7));
+      if (!bucket) continue;
+      bucket.spend += Number(expense.amount) || 0;
+    }
+    for (const bucket of buckets) bucket.profit = bucket.revenue - bucket.spend;
+
+    const width = 760;
+    const height = 280;
+    const padLeft = 56;
+    const padRight = 16;
+    const padTop = 16;
+    const padBottom = 44;
+    const plotWidth = width - padLeft - padRight;
+    const plotHeight = height - padTop - padBottom;
+
+    let maxValue = Math.max(0, ...buckets.map(b => Math.max(b.revenue, b.spend, b.profit)));
+    let minValue = Math.min(0, ...buckets.map(b => Math.min(0, b.profit)));
+    if (maxValue === minValue) maxValue = minValue + 100;
+    const span = maxValue - minValue;
+    const niceMax = maxValue + span * 0.12;
+    const niceMin = minValue < 0 ? minValue - span * 0.12 : 0;
+    const range = niceMax - niceMin || 1;
+
+    const scaleY = (value: number) => padTop + ((niceMax - value) / range) * plotHeight;
+    const zeroY = scaleY(0);
+    const groupWidth = plotWidth / buckets.length;
+    const barWidth = Math.min(20, (groupWidth * 0.7) / 3);
+    const barGap = 2;
+    const groupBarsWidth = barWidth * 3 + barGap * 2;
+
+    const parts: string[] = [];
+    parts.push(`<svg viewBox="0 0 ${width} ${height}" role="img" aria-label="Monthly revenue, cost and profit">`);
+
+    // Horizontal grid + value labels
+    for (let tick = 0; tick <= 4; tick++) {
+      const value = niceMin + (range * tick) / 4;
+      const y = scaleY(value);
+      const cls = Math.abs(value) < 0.001 ? 'chart-zero' : 'chart-grid';
+      parts.push(`<line class="${cls}" x1="${padLeft}" y1="${y.toFixed(1)}" x2="${width - padRight}" y2="${y.toFixed(1)}" />`);
+      parts.push(`<text class="chart-label" x="${padLeft - 8}" y="${(y + 3.5).toFixed(1)}" text-anchor="end">${formatMoneyCompact(value)}</text>`);
+    }
+
+    // Grouped bars: revenue, cost + expenses, profit
+    buckets.forEach((bucket, index) => {
+      const startX = padLeft + groupWidth * index + (groupWidth - groupBarsWidth) / 2;
+      const values: Array<{ value: number; color: string; name: string }> = [
+        { value: bucket.revenue, color: '#22c55e', name: 'Revenue' },
+        { value: bucket.spend, color: '#ef4444', name: 'Cost + expenses' },
+        { value: bucket.profit, color: '#3b82f6', name: 'Profit' },
+      ];
+
+      values.forEach((bar, barIndex) => {
+        const x = startX + barIndex * (barWidth + barGap);
+        const y = scaleY(bar.value);
+        const top = Math.min(y, zeroY);
+        const barHeight = Math.max(Math.abs(y - zeroY), bar.value === 0 ? 0 : 1.5);
+        parts.push(
+          `<rect x="${x.toFixed(1)}" y="${top.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barHeight.toFixed(1)}" rx="2" fill="${bar.color}">` +
+          `<title>${bucket.label}: ${bar.name} ${formatMoney(bar.value)}</title></rect>`,
+        );
+      });
+
+      const showLabel = monthCount <= 6 || index % 2 === 0;
+      if (showLabel) {
+        const centerX = padLeft + groupWidth * index + groupWidth / 2;
+        parts.push(`<text class="chart-month" x="${centerX.toFixed(1)}" y="${height - padBottom + 20}" text-anchor="middle">${bucket.label}</text>`);
+      }
+    });
+
+    parts.push('</svg>');
+    moneyChart.innerHTML = parts.join('');
+  }
+
+  function startSaleEdit(sale: QrSale) {
+    if (!saleForm) return;
+    if (saleIdInput) saleIdInput.value = sale.id;
+    if (saleBusinessInput) saleBusinessInput.value = sale.business_id || '';
+    if (saleNameInput) saleNameInput.value = sale.business_name || '';
+    if (saleQtyInput) saleQtyInput.value = String(sale.quantity || 1);
+    if (salePriceInput) salePriceInput.value = String(Number(sale.unit_price) || 0);
+    if (saleCostInput) saleCostInput.value = String(Number(sale.unit_cost) || 0);
+    if (saleDateInput) saleDateInput.value = (sale.sale_date || todayInputValue()).slice(0, 10);
+    if (saleStatusInput) saleStatusInput.value = sale.status === 'pending' ? 'pending' : 'paid';
+    if (saleNoteInput) saleNoteInput.value = sale.note || '';
+    if (saleSubmitBtn) saleSubmitBtn.textContent = 'Update sale';
+    updateSalePreview();
+    if (saleModal) saleModal.style.display = 'flex';
+  }
+
+  async function deleteSale(id: string) {
+    if (!id) return;
+    const sale = sales.find(item => item.id === id);
+    if (!window.confirm(`Delete the sale for "${sale?.business_name || 'this customer'}"?`)) return;
+    try {
+      await DatabaseService.deleteSale(id);
+      await loadMoneyData();
+    } catch (error) {
+      alert(`Could not delete the sale.\n\n${getSupabaseErrorMessage(error)}`);
+    }
+  }
+
+  function startExpenseEdit(expense: QrExpense) {
+    if (!expenseForm) return;
+    if (expenseIdInput) expenseIdInput.value = expense.id;
+    if (expenseTitleInput) expenseTitleInput.value = expense.title || '';
+    if (expenseCategoryInput) expenseCategoryInput.value = expense.category || 'Other';
+    if (expenseAmountInput) expenseAmountInput.value = String(Number(expense.amount) || 0);
+    if (expenseDateInput) expenseDateInput.value = (expense.expense_date || todayInputValue()).slice(0, 10);
+    if (expenseNoteInput) expenseNoteInput.value = expense.note || '';
+    if (expenseSubmitBtn) expenseSubmitBtn.textContent = 'Update expense';
+    if (expenseModal) expenseModal.style.display = 'flex';
+  }
+
+  async function deleteExpense(id: string) {
+    if (!id) return;
+    const expense = expenses.find(item => item.id === id);
+    if (!window.confirm(`Delete "${expense?.title || 'this expense'}"?`)) return;
+    try {
+      await DatabaseService.deleteExpense(id);
+      await loadMoneyData();
+    } catch (error) {
+      alert(`Could not delete the expense.\n\n${getSupabaseErrorMessage(error)}`);
+    }
+  }
+
+  function handleMoneySaveError(error: unknown) {
+    if (error instanceof MissingTableError) {
+      alert('Could not save — the sales and expenses tables are missing in Supabase.');
+      return;
+    }
+    alert(`Unable to save.\n\n${getSupabaseErrorMessage(error)}`);
+  }
+
+  saleForm?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const name = saleNameInput?.value.trim() || '';
+    if (!name) { alert('Enter the customer or shop name.'); return; }
+
+    const quantity = Math.max(1, Math.floor(Number(saleQtyInput?.value) || 1));
+    const unitPrice = Math.max(0, Number(salePriceInput?.value) || 0);
+    const unitCost = Math.max(0, Number(saleCostInput?.value) || 0);
+
+    if (saleSubmitBtn) { saleSubmitBtn.disabled = true; saleSubmitBtn.textContent = 'Saving…'; }
+
+    try {
+      await DatabaseService.saveSale({
+        id: saleIdInput?.value || undefined,
+        business_id: saleBusinessInput?.value || null,
+        business_name: name,
+        quantity,
+        unit_price: unitPrice,
+        unit_cost: unitCost,
+        status: saleStatusInput?.value === 'pending' ? 'pending' : 'paid',
+        sale_date: saleDateInput?.value || todayInputValue(),
+        note: saleNoteInput?.value.trim() || '',
+      });
+      resetSaleForm();
+      await loadMoneyData();
+    } catch (error) {
+      handleMoneySaveError(error);
+    } finally {
+      if (saleSubmitBtn) {
+        saleSubmitBtn.disabled = false;
+        saleSubmitBtn.textContent = saleIdInput?.value ? 'Update sale' : 'Save sale';
+      }
+    }
+  });
+
+  expenseForm?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const title = expenseTitleInput?.value.trim() || '';
+    const amount = Number(expenseAmountInput?.value) || 0;
+    if (!title) { alert('Enter what the expense was for.'); return; }
+    if (amount <= 0) { alert('Enter an amount greater than zero.'); return; }
+
+    if (expenseSubmitBtn) { expenseSubmitBtn.disabled = true; expenseSubmitBtn.textContent = 'Saving…'; }
+
+    try {
+      await DatabaseService.saveExpense({
+        id: expenseIdInput?.value || undefined,
+        title,
+        category: expenseCategoryInput?.value || 'Other',
+        amount,
+        expense_date: expenseDateInput?.value || todayInputValue(),
+        note: expenseNoteInput?.value.trim() || '',
+      });
+      resetExpenseForm();
+      await loadMoneyData();
+    } catch (error) {
+      handleMoneySaveError(error);
+    } finally {
+      if (expenseSubmitBtn) {
+        expenseSubmitBtn.disabled = false;
+        expenseSubmitBtn.textContent = expenseIdInput?.value ? 'Update expense' : 'Save expense';
+      }
+    }
+  });
+
+  openSaleModalBtn?.addEventListener('click', () => {
+    resetSaleForm();
+    if (saleModal) saleModal.style.display = 'flex';
+  });
+  openExpenseModalBtn?.addEventListener('click', () => {
+    resetExpenseForm();
+    if (expenseModal) expenseModal.style.display = 'flex';
+  });
+  document.querySelectorAll<HTMLElement>('[data-money-close]').forEach(button => {
+    button.addEventListener('click', () => {
+      if (button.dataset.moneyClose === 'saleModal') resetSaleForm();
+      else resetExpenseForm();
+    });
+  });
+  [saleModal, expenseModal].forEach(modal => {
+    modal?.addEventListener('click', event => {
+      if (event.target !== modal) return;
+      if (modal === saleModal) resetSaleForm();
+      else resetExpenseForm();
+    });
+  });
+  salesFilter?.addEventListener('change', renderSales);
+  moneyChartMonths?.addEventListener('change', renderMoneyChart);
+  goRecordsBtn?.addEventListener('click', () => switchTab('recordsTab'));
+
+  [saleQtyInput, salePriceInput, saleCostInput].forEach(input => {
+    input?.addEventListener('input', updateSalePreview);
+  });
+
+  saleBusinessInput?.addEventListener('change', () => {
+    const biz = businesses.find(item => item.id === saleBusinessInput.value);
+    if (biz && !saleNameInput.value.trim()) saleNameInput.value = biz.name;
+  });
+
+  defaultSalePriceInput?.addEventListener('input', () => {
+    const previous = moneySettings.salePrice;
+    const next = Math.max(0, Number(defaultSalePriceInput.value) || 0);
+    moneySettings.salePrice = next;
+    saveMoneySettings();
+    updateDefaultMargin();
+    if (!saleIdInput?.value && Number(salePriceInput?.value) === previous) {
+      if (salePriceInput) salePriceInput.value = String(next);
+      updateSalePreview();
+    }
+  });
+
+  defaultUnitCostInput?.addEventListener('input', () => {
+    const previous = moneySettings.unitCost;
+    const next = Math.max(0, Number(defaultUnitCostInput.value) || 0);
+    moneySettings.unitCost = next;
+    saveMoneySettings();
+    updateDefaultMargin();
+    updateBulkCostHint();
+    if (!saleIdInput?.value && Number(saleCostInput?.value) === previous) {
+      if (saleCostInput) saleCostInput.value = String(next);
+      updateSalePreview();
+    }
+  });
+
+  qrBulkCount?.addEventListener('input', updateBulkCostHint);
+
+  // Restore saved pricing, then seed the forms.
+  loadMoneySettings();
+  resetSaleForm();
+  resetExpenseForm();
 
   // ── Supabase modal ───────────────────────────────────────────────────────
   supabaseSetupModalBtn?.addEventListener('click', () => { if (supabaseModal) supabaseModal.style.display = 'flex'; });
