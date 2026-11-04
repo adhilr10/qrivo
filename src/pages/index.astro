@@ -9,7 +9,7 @@ let business: Business = {
   id: 'qrivo',
   name: 'Qrivo',
   slug: 'qrivo',
-  logo_url: '/qrivo-logo.svg',
+  logo_url: '/qrivo-logo-192.webp',
   brand_color: '#6366f1',
   category: 'Smart QR Counter Cards',
   google_review_url: 'https://search.google.com/local/writereview?placeid=ChIJN1t_tDeuEmsRUsoyG83frY4',
@@ -53,7 +53,7 @@ const siteJsonLd = {
       '@id': orgId,
       name: 'Qrivo',
       url: homeUrl,
-      logo: new URL('/qrivo-logo.svg', site).href,
+      logo: new URL('/qrivo-logo-og.png', site).href,
       description:
         'Qrivo turns counter QR scans into Google reviews, WhatsApp chats and calls — with reusable QR stands that never need reprinting.',
       ...(socialProfiles.length ? { sameAs: socialProfiles } : {}),
@@ -70,17 +70,17 @@ const siteJsonLd = {
 };
 ---
 
-<Layout title={pageTitle} brandColor={brandColor} hideNav={true} jsonLd={siteJsonLd}>
+<Layout title={pageTitle} brandColor={brandColor} hideNav={true} jsonLd={siteJsonLd} image={business?.logo_url || '/qrivo-logo-og.png'}>
   <div class="counter-page-wrapper" id="counterPageWrapper" data-slug="qrivo" data-biz-id={business?.id || ''}>
     
     <!-- Active Business Counter View -->
     <div class="counter-card" id="activeBizCard" style={business && !business.is_active ? 'display: none;' : ''}>
       
       <!-- Brand Logo -->
-      <div class="biz-logo-container">
+      <div class="biz-logo-container home-logo-container">
         <img
           id="bizLogoImg"
-          src={business?.logo_url || '/qrivo-logo.svg'}
+          src={business?.logo_url || '/qrivo-logo-192.webp'}
           alt={business?.name || 'Qrivo Logo'}
           class="biz-logo-img"
           loading="eager"

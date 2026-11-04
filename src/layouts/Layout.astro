@@ -32,7 +32,15 @@ const imageUrl = image
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="application-name" content="Qrivo" />
+    <meta name="apple-mobile-web-app-title" content="Qrivo" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <meta name="description" content={description} />
@@ -71,11 +79,9 @@ const imageUrl = image
     {!hideNav && (
       <header class="site-nav no-print">
         <div class="container site-nav-inner">
-          <a href="/" class="brand-badge">
+          <a href="/" class="brand-badge" aria-label="Qrivo home">
             <div class="brand-icon-box">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f5c518" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
-              </svg>
+              <img src="/qrivo-logo-192.webp" alt="" width="28" height="28" class="brand-logo-img" />
             </div>
             <span>Qrivo</span>
           </a>
@@ -97,5 +103,15 @@ const imageUrl = image
     <main>
       <slot />
     </main>
+
+    <script is:inline>
+      if ('serviceWorker' in navigator && location.protocol === 'https:') {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {
+            // PWA support is an enhancement — the site works without it.
+          });
+        });
+      }
+    </script>
   </body>
 </html>

@@ -1,0 +1,101 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="You are offline | Qrivo" hideNav={true} noindex={true}>
+  <main class="offline-shell">
+    <section class="offline-card" aria-labelledby="offline-title">
+      <img src="/qrivo-logo-192.webp" alt="" width="72" height="72" class="offline-logo" />
+      <p class="offline-kicker">NO CONNECTION</p>
+      <h1 id="offline-title">You are offline</h1>
+      <p class="offline-copy">
+        Qrivo needs a connection to load reviews, WhatsApp and business details. Check your
+        internet and try again.
+      </p>
+      <button type="button" class="offline-btn" onclick="location.reload()">Try again</button>
+      <a class="offline-link" href="/businesses/">Browse cached business directory</a>
+    </section>
+  </main>
+</Layout>
+
+<style>
+  .offline-shell {
+    min-height: 100vh;
+    display: grid;
+    place-items: center;
+    padding: 1.5rem;
+  }
+
+  .offline-card {
+    width: min(100%, 26rem);
+    padding: 2rem 1.5rem;
+    text-align: center;
+    background: var(--surface, #fffdf5);
+    border: 3px solid var(--border-main, #0a0a0a);
+    border-radius: 10px;
+    box-shadow: 8px 8px 0 var(--border-main, #0a0a0a);
+  }
+
+  .offline-logo {
+    width: 72px;
+    height: 72px;
+    margin: 0 auto 1rem;
+    display: block;
+    border-radius: 16px;
+  }
+
+  .offline-kicker {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.14em;
+    color: var(--brand, #4f46e5);
+    margin-bottom: 0.4rem;
+  }
+
+  .offline-card h1 {
+    font-size: clamp(1.6rem, 7vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text-main, #0a0a0a);
+    margin-bottom: 0.75rem;
+  }
+
+  .offline-copy {
+    color: var(--text-muted, #4a4a4a);
+    line-height: 1.6;
+    font-size: 0.95rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .offline-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    background: var(--brand, #4f46e5);
+    color: #ffffff;
+    border: 2.5px solid var(--border-main, #0a0a0a);
+    border-radius: 7px;
+    box-shadow: 4px 4px 0 var(--border-main, #0a0a0a);
+    font-family: inherit;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .offline-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0 var(--border-main, #0a0a0a);
+  }
+
+  .offline-link {
+    display: inline-block;
+    margin-top: 1rem;
+    color: var(--text-main, #0a0a0a);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+</style>

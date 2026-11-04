@@ -3186,7 +3186,7 @@ input:checked + .slider:before { transform: translateX(22px); }
   const MONEY_SETTINGS_KEY = 'qrivo.money.settings';
   const RESERVED_SLUGS = new Set(['s', 'admin', 'login', '404']);
 
-  const DEFAULT_LOGO_URL = 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop&q=80';
+  const DEFAULT_LOGO_URL = '/qrivo-logo-192.webp';
   const DEFAULT_COUNTRY_CODE = '91';
   const DEFAULT_WA_GREETING = 'Hi';
   const INSTAGRAM_BASE = 'https://instagram.com';
@@ -3575,7 +3575,7 @@ input:checked + .slider:before { transform: translateX(22px); }
             <!-- Logo + name + status -->
             <div class="biz-card-top">
               <img
-                src="${b.logo_url || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=120&auto=format&fit=crop&q=80'}"
+                src="${b.logo_url || '/qrivo-logo-192.webp'}"
                 alt="${b.name}"
                 class="biz-card-logo"
               />

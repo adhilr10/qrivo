@@ -46,7 +46,7 @@ const businessCategoryLabel = businessCategory(business);
   title={pageTitle}
   description={pageDescription}
   brandColor={brandColor}
-  image={business?.logo_url}
+  image={business?.logo_url || '/qrivo-logo-og.png'}
   jsonLd={seo.jsonLd}
   hideNav={true}
   noindex={!business?.is_active}
@@ -60,7 +60,7 @@ const businessCategoryLabel = businessCategory(business);
       <div class="biz-logo-container">
         <img
           id="bizLogoImg"
-          src={business?.logo_url || 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=200&auto=format&fit=crop&q=80'}
+          src={business?.logo_url || '/qrivo-logo-192.webp'}
           alt={business?.name || 'Business Logo'}
           class="biz-logo-img"
           loading="eager"

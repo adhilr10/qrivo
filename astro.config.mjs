@@ -21,7 +21,11 @@ export default defineConfig({
 
   integrations: [
     sitemap({
-      filter: page => !page.includes('/admin') && !page.includes('/s/') && !page.includes('/card-test-page'),
+      filter: page =>
+        !page.includes('/admin') &&
+        !page.includes('/s/') &&
+        !page.includes('/offline') &&
+        !page.includes('/card-test-page'),
     }),
     ...(imagekitUrlEndpoint ? [imagekit({ urlEndpoint: imagekitUrlEndpoint })] : []),
   ],
