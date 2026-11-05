@@ -2971,6 +2971,28 @@ input:checked + .slider:before { transform: translateX(22px); }
   padding: 1.25rem;
 }
 
+/* Keep the money modal header fixed and let the form scroll, so the Save
+   button is never clipped on short mobile screens. */
+#saleModal .modal-dialog,
+#expenseModal .modal-dialog {
+  display: flex;
+  flex-direction: column;
+}
+
+#saleModal .modal-header,
+#expenseModal .modal-header {
+  flex-shrink: 0;
+}
+
+#saleModal .money-modal-body,
+#expenseModal .money-modal-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
 .money-form {
   display: flex;
   flex-direction: column;

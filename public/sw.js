@@ -1,5 +1,5 @@
 /* Qrivo service worker — installable app shell + offline fallback. */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const PRECACHE = `qrivo-precache-${VERSION}`;
 const RUNTIME = `qrivo-runtime-${VERSION}`;
 const OFFLINE_URL = '/offline/';
@@ -65,6 +65,14 @@ self.addEventListener('fetch', event => {
   const url = new URL(request.url);
   if (url.origin !== self.location.origin) return;
   if (isPrivatePath(url)) return;
+
+  // Never let an old manifest keep an installed app on the wrong start URL.
+  if (url.pathname === '/site.webmanifest') {
+    event.respondWith(
+      fetch(request, { cache: 'no-store' }).catch(() => caches.match(request)),
+    );
+    return;
+  }
 
   if (request.mode === 'navigate') {
     event.respondWith((async () => {

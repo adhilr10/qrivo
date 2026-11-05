@@ -39,7 +39,7 @@
       "name": "Qrivo home",
       "short_name": "Home",
       "description": "Open the Qrivo counter card",
-      "url": "/",
+      "url": "/?source=home",
       "icons": [
         {
           "src": "/icons/icon-192.png",
